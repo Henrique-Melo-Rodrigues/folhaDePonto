@@ -1,0 +1,30 @@
+# Segredos
+.env
+.env.*
+
+# Ambiente Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Testes e cobertura (nao precisam ir para a imagem)
+apps/*/tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django dev
+db.sqlite3
+staticfiles/
+
+# Git
+.git/
+.gitignore
+
+# Docker (a imagem nao precisa dos proprios arquivos de build)
+Dockerfile
+docker-compose*.yml
+
+# Docs locais
+*.md

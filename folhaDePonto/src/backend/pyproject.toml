@@ -1,0 +1,21 @@
+[project]
+name = "folha-de-ponto-backend"
+version = "0.1.0"
+description = "API MVP para folha de ponto pessoal."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<7.0",
+    "django-cors-headers>=4.6",
+    "djangorestframework>=3.15",
+    "gunicorn>=23.0",
+    "pymongo>=4.10",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false
+
