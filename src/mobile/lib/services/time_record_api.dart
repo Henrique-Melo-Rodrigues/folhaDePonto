@@ -5,8 +5,9 @@ import 'package:http/http.dart' as http;
 import '../models/time_record.dart';
 
 class TimeRecordApi {
-  TimeRecordApi({String? baseUrl, http.Client? client})
+  TimeRecordApi({String? baseUrl, String? apiKey, http.Client? client})
       : baseUrl = _normalizeBaseUrl(baseUrl ?? _defaultBaseUrl),
+        apiKey = apiKey ?? _defaultApiKey,
         _client = client ?? http.Client();
 
   static const _defaultBaseUrl = String.fromEnvironment(
@@ -14,11 +15,25 @@ class TimeRecordApi {
     defaultValue: 'http://10.0.2.2:8000',
   );
 
+  static const _defaultApiKey = String.fromEnvironment(
+    'API_KEY',
+    defaultValue: '',
+  );
+
   final String baseUrl;
+  final String apiKey;
   final http.Client _client;
 
+  Map<String, String> _headers([Map<String, String>? extra]) {
+    return {
+      if (apiKey.isNotEmpty) 'X-Api-Key': apiKey,
+      ...?extra,
+    };
+  }
+
   Future<TimeRecord?> getToday() async {
-    final response = await _client.get(_uri('/time-records/today/'));
+    final response =
+        await _client.get(_uri('/time-records/today/'), headers: _headers());
     if (response.statusCode == 404) {
       return null;
     }
@@ -27,7 +42,8 @@ class TimeRecordApi {
   }
 
   Future<TimeRecord?> getByDate(String date) async {
-    final response = await _client.get(_uri('/time-records/$date/'));
+    final response =
+        await _client.get(_uri('/time-records/$date/'), headers: _headers());
     if (response.statusCode == 404) {
       return null;
     }
@@ -44,6 +60,7 @@ class TimeRecordApi {
           'month': month.toString(),
         },
       ),
+      headers: _headers(),
     );
     _ensureSuccess(response);
 
@@ -58,7 +75,7 @@ class TimeRecordApi {
   Future<TimeRecord> create(TimeRecord record) async {
     final response = await _client.post(
       _uri('/time-records/'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers({'Content-Type': 'application/json'}),
       body: jsonEncode(record.toSaveJson()),
     );
     _ensureSuccess(response);
@@ -68,7 +85,7 @@ class TimeRecordApi {
   Future<TimeRecord> update(TimeRecord record) async {
     final response = await _client.put(
       _uri('/time-records/${record.date}/'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers({'Content-Type': 'application/json'}),
       body: jsonEncode(record.toSaveJson()),
     );
     _ensureSuccess(response);
@@ -76,7 +93,8 @@ class TimeRecordApi {
   }
 
   Future<void> delete(String date) async {
-    final response = await _client.delete(_uri('/time-records/$date/'));
+    final response =
+        await _client.delete(_uri('/time-records/$date/'), headers: _headers());
     _ensureSuccess(response);
   }
 

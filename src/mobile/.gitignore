@@ -9,3 +9,7 @@ android/app/debug
 android/app/profile
 android/app/release
 
+# Arquivos de IDE
+*.iml
+.idea/
+
