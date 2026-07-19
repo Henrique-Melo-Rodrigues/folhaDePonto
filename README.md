@@ -10,7 +10,7 @@ Foi desse problema real que surgiu a ideia deste projeto.
 
 ## O que é
 
-Um aplicativo Android pessoal para registrar os horários de trabalho diariamente, classificar o tipo de cada dia e consultar o histórico do mês de forma organizada — substituindo as anotações soltas do WhatsApp por uma interface simples e acessível.
+Um web-app pessoal para registrar os horários de trabalho diariamente, classificar o tipo de cada dia e consultar o histórico do mês de forma organizada — substituindo as anotações soltas do WhatsApp por uma interface simples e acessível de qualquer navegador.
 
 O app permite registrar:
 
@@ -31,30 +31,54 @@ A ideia é construir algo funcional do zero — com arquitetura limpa, testes, s
 
 | Camada | Tecnologia |
 |---|---|
-| App mobile | Flutter (Android) |
-| API | Django + Django REST Framework |
-| Banco de dados | MongoDB via PyMongo |
-| Servidor | Gunicorn + Docker Compose |
-| Gerenciador de pacotes | uv |
+| Frontend web | React + Vite + TypeScript (`src/web`) |
+| API | Django + Django REST Framework (`src/backend`) |
+| Banco de dados | SQLite via Django ORM |
+| Servidor | Django/WhiteNoise (serve API + frontend num só processo) |
+| Gerenciador de pacotes | uv (backend) / npm (frontend) |
 
-## Arquitetura do backend
+> O app Flutter original ainda está em `src/mobile`, mas o caminho principal agora é o web-app.
+
+## Arquitetura do backend (camadas em classes)
 
 ```
-views.py        → recebe HTTP, valida e delega
+views.py        → recebe HTTP, valida e delega (APIView)
 serializers.py  → valida e normaliza o input
-services.py     → regras de negócio
-repositories.py → acesso ao MongoDB
+services.py     → regras de negócio (TimeRecordService)
+repositories.py → acesso ao SQLite via ORM (TimeRecordRepository)
+models.py       → modelo TimeRecord
 ```
 
 ## Como rodar localmente
 
+Backend (porta 8000):
+
 ```bash
 cd src/backend
-cp .env.example .env   # preencha as variáveis
-docker compose up --build
+cp .env.example .env   # preencha SECRET_KEY e API_KEY
+uv sync
+uv run python manage.py migrate
+uv run python manage.py runserver 0.0.0.0:8000
 ```
 
-A API sobe em `http://localhost:8000`. Endpoints disponíveis:
+Frontend em modo dev (porta 5173, com proxy para a API):
+
+```bash
+cd src/web
+npm install
+npm run dev
+```
+
+Ou tudo numa porta só (como em produção): `npm run build` em `src/web` e
+acesse direto `http://localhost:8000` — o Django serve o build.
+
+Na primeira visita o app pede a chave de API (`API_KEY` do `.env`).
+
+## Rodando num celular antigo (Termux + SSH)
+
+Veja o passo a passo completo em [DEPLOY.md](DEPLOY.md).
+
+## Endpoints da API
 
 ```
 GET    /api/health/

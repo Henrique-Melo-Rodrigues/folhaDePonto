@@ -37,12 +37,24 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
 
-TEMPLATES = []
+# Build do frontend web (Vite). O Django serve o SPA e os assets,
+# então em produção (Termux) basta Python.
+FRONTEND_DIST = BASE_DIR.parent / "web" / "dist"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [FRONTEND_DIST],
+        "APP_DIRS": False,
+        "OPTIONS": {},
+    }
+]
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
@@ -59,6 +71,8 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+WHITENOISE_ROOT = FRONTEND_DIST
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
@@ -80,7 +94,4 @@ REST_FRAMEWORK = {
 }
 
 FIXED_USER_ID = os.getenv("FIXED_USER_ID", "usuario_001")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "folha_ponto")
-MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "time_records")
 API_KEY = os.getenv("API_KEY", "")
