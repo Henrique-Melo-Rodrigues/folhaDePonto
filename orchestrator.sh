@@ -29,8 +29,9 @@ if [ -z "$AGY_BIN" ]; then
   exit 1
 fi
 
-# Diretório raiz do projeto
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# Diretório raiz do projeto (funciona com o script na raiz ou em scripts/)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 cd "$ROOT_DIR"
 
 BASE_BRANCH="$(git branch --show-current 2>/dev/null || echo "main")"
@@ -152,7 +153,22 @@ EOF_GATEKEEPER_FAIL
   # ETAPA 4: AVALIAÇÃO DE CONVERGÊNCIA
   # ----------------------------------------------------
   echo "▶ [4/4] Avaliando veredito do barramento..."
-  if [ -f ".agent_bus/feedback.md" ] && grep -q -i "## Verdict[[:space:]]*APPROVED" .agent_bus/feedback.md; then
+  # O veredito vem em duas linhas ("## Verdict" e, abaixo, "APPROVED"), então
+  # grep de linha única não serve: lê o valor da seção e compara.
+  VERDICT=""
+  if [ -f ".agent_bus/feedback.md" ]; then
+    VERDICT="$(awk '"'"'
+      /^##[[:space:]]*Verdict/ {
+        rest = $0
+        sub(/^##[[:space:]]*Verdict[[:space:]]*:?[[:space:]]*/, "", rest)
+        if (rest == "") { getline rest }
+        gsub(/[^A-Za-z_]/, "", rest)
+        print toupper(rest)
+        exit
+      }'"'"' .agent_bus/feedback.md)"
+  fi
+
+  if [ "$VERDICT" = "APPROVED" ]; then
     echo ""
     echo "=========================================================="
     echo "  ✔ CÓDIGO APROVADO PELO ANTIGRAVITY NA RODADA $ROUND!"
