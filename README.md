@@ -35,9 +35,46 @@ A ideia é construir algo funcional do zero — com arquitetura limpa, testes, s
 | API | Django + Django REST Framework (`src/backend`) |
 | Banco de dados | SQLite via Django ORM |
 | Servidor | Django/WhiteNoise (serve API + frontend num só processo) |
-| Gerenciador de pacotes | uv (backend) / npm (frontend) |
+| App Android | Flutter + SQLite embarcado, offline (`src/mobile`) |
+| Contratos de domínio | JSON + gerador em Python (`contracts/`) |
+| Gerenciador de pacotes | uv (backend) / npm (frontend) / pub (mobile) |
 
-> O app Flutter original ainda está em `src/mobile`, mas o caminho principal agora é o web-app.
+## Dois escopos, um domínio
+
+O projeto entrega o mesmo registro de ponto por dois caminhos independentes:
+
+- **Web-app com servidor** (`src/backend` + `src/web`) — o caminho principal.
+  O Django guarda os dados e aplica as regras; o React é o cliente. Roda no PC
+  ou num celular antigo via Termux, e é acessível de qualquer navegador da rede.
+- **App Android offline** (`src/mobile`) — roda inteiro no aparelho, com SQLite
+  embarcado. Sem servidor, sem rede e sem chave de API. Existe um adapter HTTP
+  opcional para falar com o backend, mas ele só entra num build feito de
+  propósito para isso.
+
+Os dois não sincronizam entre si: cada um tem o seu banco. O que eles
+compartilham é o **domínio**.
+
+`contracts/time_record.json` é a fonte única do vocabulário — tipos de dia,
+campos de horário, status possíveis, formato da hora. O gerador escreve os três
+alvos, que são versionados e **nunca editados à mão**:
+
+```bash
+python3 contracts/generate.py           # regera os alvos
+python3 contracts/generate.py --check   # falha se algum estiver fora de sincronia
+```
+
+| Alvo gerado | Consumidor |
+|---|---|
+| `src/backend/apps/time_records/domain_generated.py` | Django |
+| `src/web/src/domain.generated.ts` | React |
+| `src/mobile/lib/domain/domain.g.dart` | Flutter |
+
+Backend e mobile implementam as regras de status em linguagens diferentes; os
+vetores golden de `contracts/status_cases.json` rodam nos testes dos dois lados
+e provam que continuam concordando.
+
+O raciocínio por trás do escopo offline está em
+[docs/decisions/ADR-001-mobile-local-first.md](docs/decisions/ADR-001-mobile-local-first.md).
 
 ## Arquitetura do backend (camadas em classes)
 

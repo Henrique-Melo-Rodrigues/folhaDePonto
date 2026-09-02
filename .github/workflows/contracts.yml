@@ -1,0 +1,37 @@
+name: Contracts CI
+
+# contracts/time_record.json e a fonte unica do vocabulario de dominio; os tres
+# alvos gerados sao versionados. Este job existe para que ninguem edite um alvo
+# a mao nem esqueca de rodar o gerador depois de mudar o contrato.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "src/backend/apps/time_records/domain_generated.py"
+      - "src/web/src/domain.generated.ts"
+      - "src/mobile/lib/domain/domain.g.dart"
+      - ".github/workflows/contracts.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - "src/backend/apps/time_records/domain_generated.py"
+      - "src/web/src/domain.generated.ts"
+      - "src/mobile/lib/domain/domain.g.dart"
+      - ".github/workflows/contracts.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # O gerador so usa a biblioteca padrao: nada para instalar.
+      - name: Conferir alvos gerados
+        run: python3 contracts/generate.py --check

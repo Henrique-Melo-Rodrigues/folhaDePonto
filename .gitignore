@@ -4,6 +4,9 @@
 !.env.example
 !.env.prod.example
 
+# Barramento de Agentes Multi-CLI
+.agent_bus/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -16,6 +19,10 @@ htmlcov/
 # Django
 db.sqlite3
 staticfiles/
+
+# Node / Frontend
+node_modules/
+dist/
 
 # Flutter / Dart
 .dart_tool/
@@ -37,6 +44,8 @@ android/app/release/
 *.swp
 *.swo
 
-# OS
+# OS / Windows WSL metadata
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
+*.Zone.Identifier

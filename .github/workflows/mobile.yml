@@ -26,6 +26,11 @@ jobs:
           channel: stable
           flutter-version: "3.44.1"
 
+      # sqflite_common_ffi roda o SQLite na VM do Dart e carrega a libsqlite3
+      # do sistema: sem ela os testes do DAO nao sobem no runner.
+      - name: Instalar libsqlite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Baixar dependencias
         run: flutter pub get
 
@@ -59,12 +64,11 @@ jobs:
       - name: Baixar dependencias
         run: flutter pub get
 
-      # API_BASE_URL e API_KEY ficam como secrets do repositorio no GitHub.
-      - name: Build APK debug
-        run: |
-          flutter build apk --debug \
-            --dart-define=API_BASE_URL="${{ secrets.API_BASE_URL }}" \
-            --dart-define=API_KEY="${{ secrets.API_KEY }}"
+      # Sem --dart-define=API_BASE_URL de proposito: o APK publicado e o offline,
+      # que roda inteiro no aparelho. O adapter remoto e opt-in, so num build
+      # local (veja src/mobile/README.md).
+      - name: Build APK debug offline
+        run: flutter build apk --debug
 
       - name: Publicar APK como artefato
         uses: actions/upload-artifact@v4

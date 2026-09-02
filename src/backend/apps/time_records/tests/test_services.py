@@ -1,6 +1,11 @@
+import json
+from pathlib import Path
+
 from django.test import SimpleTestCase, override_settings
 
 from apps.time_records.services import TimeRecordService
+
+STATUS_CASES_FILE = Path(__file__).resolve().parents[5] / "contracts" / "status_cases.json"
 
 
 class FakeRepository:
@@ -85,3 +90,21 @@ class TimeRecordServiceTests(SimpleTestCase):
         self.assertEqual(first["created_at"], second["created_at"])
         self.assertEqual(second["status"], "not_worked")
 
+
+class CalculateStatusContractTests(SimpleTestCase):
+    """Vetores golden compartilhados com o mobile (contracts/status_cases.json).
+
+    Se este teste e o equivalente em Dart passarem, servidor e app calculam o
+    mesmo status para as mesmas entradas.
+    """
+
+    def test_matches_shared_status_cases(self):
+        cases = json.loads(STATUS_CASES_FILE.read_text(encoding="utf-8"))["cases"]
+
+        self.assertTrue(cases, "contracts/status_cases.json esta vazio")
+        for case in cases:
+            with self.subTest(case=case["name"]):
+                self.assertEqual(
+                    TimeRecordService.calculate_status(case["day_type"], case["times"]),
+                    case["expected"],
+                )

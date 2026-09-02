@@ -5,17 +5,7 @@ from datetime import date
 from django.conf import settings
 from django.utils import timezone
 
-from apps.time_records.serializers import TIME_FIELDS
-
-
-NOT_WORKED_DAY_TYPES = {
-    "atividade_teorica",
-    "folga",
-    "compensacao",
-    "feriado",
-    "falta",
-    "outro",
-}
+from apps.time_records.domain_generated import NOT_WORKED_DAY_TYPES, TIME_FIELDS
 
 
 class TimeRecordService:

@@ -4,19 +4,9 @@ import re
 
 from rest_framework import serializers
 
+from apps.time_records.domain_generated import DAY_TYPES, TIME_FIELDS, TIME_PATTERN
 
-DAY_TYPES = (
-    "trabalho",
-    "atividade_teorica",
-    "folga",
-    "compensacao",
-    "feriado",
-    "falta",
-    "outro",
-)
-
-TIME_FIELDS = ("arrival", "lunch_start", "lunch_end", "departure")
-TIME_RE = re.compile(r"^\d{2}:\d{2}$")
+TIME_RE = re.compile(TIME_PATTERN)
 
 
 class TimesSerializer(serializers.Serializer):

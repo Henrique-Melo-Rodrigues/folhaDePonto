@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/time_record.dart';
-import '../services/time_record_api.dart';
+import '../data/time_record_store.dart';
+import '../domain/dates.dart';
+import '../domain/domain.g.dart';
+import '../domain/status.dart';
+import '../domain/time_record.dart';
 
 class TimeRecordFormScreen extends StatefulWidget {
   const TimeRecordFormScreen({
     super.key,
-    required this.api,
+    required this.store,
     required this.selectedDate,
     this.initialRecord,
   });
 
-  final TimeRecordApi api;
+  final TimeRecordStore store;
   final DateTime selectedDate;
   final TimeRecord? initialRecord;
 
@@ -24,10 +27,7 @@ class _TimeRecordFormScreenState extends State<TimeRecordFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late DateTime _date;
   late String _dayType;
-  late final TextEditingController _arrivalController;
-  late final TextEditingController _lunchStartController;
-  late final TextEditingController _lunchEndController;
-  late final TextEditingController _departureController;
+  late final Map<String, TextEditingController> _timeControllers;
   late final TextEditingController _notesController;
   bool _isSaving = false;
 
@@ -38,20 +38,19 @@ class _TimeRecordFormScreenState extends State<TimeRecordFormScreen> {
     super.initState();
     final record = widget.initialRecord;
     _date = record == null ? widget.selectedDate : parseApiDate(record.date);
-    _dayType = record?.dayType ?? 'trabalho';
-    _arrivalController = TextEditingController(text: record?.times.arrival ?? '');
-    _lunchStartController = TextEditingController(text: record?.times.lunchStart ?? '');
-    _lunchEndController = TextEditingController(text: record?.times.lunchEnd ?? '');
-    _departureController = TextEditingController(text: record?.times.departure ?? '');
+    _dayType = record?.dayType ?? dayTypes.first;
+    _timeControllers = {
+      for (final field in timeFields)
+        field: TextEditingController(text: record?.times[field] ?? ''),
+    };
     _notesController = TextEditingController(text: record?.notes ?? '');
   }
 
   @override
   void dispose() {
-    _arrivalController.dispose();
-    _lunchStartController.dispose();
-    _lunchEndController.dispose();
-    _departureController.dispose();
+    for (final controller in _timeControllers.values) {
+      controller.dispose();
+    }
     _notesController.dispose();
     super.dispose();
   }
@@ -79,25 +78,17 @@ class _TimeRecordFormScreenState extends State<TimeRecordFormScreen> {
     }
 
     setState(() => _isSaving = true);
-    final record = TimeRecord(
+    final input = TimeRecordInput(
       date: formatApiDate(_date),
       dayType: _dayType,
-      times: TimeRecordTimes(
-        arrival: _arrivalController.text,
-        lunchStart: _lunchStartController.text,
-        lunchEnd: _lunchEndController.text,
-        departure: _departureController.text,
-      ),
+      times: TimeRecordTimes({
+        for (final entry in _timeControllers.entries) entry.key: entry.value.text,
+      }),
       notes: _notesController.text.trim(),
-      status: widget.initialRecord?.status ?? 'incomplete',
     );
 
     try {
-      if (_isEditing) {
-        await widget.api.update(record);
-      } else {
-        await widget.api.create(record);
-      }
+      await widget.store.save(input);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -140,7 +131,7 @@ class _TimeRecordFormScreenState extends State<TimeRecordFormScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await widget.api.delete(formatApiDate(_date));
+      await widget.store.delete(formatApiDate(_date));
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -198,18 +189,17 @@ class _TimeRecordFormScreenState extends State<TimeRecordFormScreen> {
               onChanged: _isSaving ? null : (value) => setState(() => _dayType = value!),
             ),
             const SizedBox(height: 12),
-            _TimeField(label: 'Entrada', controller: _arrivalController),
-            const SizedBox(height: 12),
-            _TimeField(label: 'Saida almoco', controller: _lunchStartController),
-            const SizedBox(height: 12),
-            _TimeField(label: 'Retorno almoco', controller: _lunchEndController),
-            const SizedBox(height: 12),
-            _TimeField(label: 'Saida final', controller: _departureController),
-            const SizedBox(height: 12),
+            for (final field in timeFields) ...[
+              _TimeField(
+                label: timeFieldLabels[field] ?? field,
+                controller: _timeControllers[field]!,
+              ),
+              const SizedBox(height: 12),
+            ],
             TextFormField(
               controller: _notesController,
               enabled: !_isSaving,
-              decoration: const InputDecoration(labelText: 'Observacoes'),
+              decoration: const InputDecoration(labelText: 'Observações'),
               minLines: 3,
               maxLines: 5,
             ),
@@ -248,28 +238,7 @@ class _TimeField extends StatelessWidget {
         FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
         LengthLimitingTextInputFormatter(5),
       ],
-      validator: _validateTime,
+      validator: validateTime,
     );
   }
-
-  String? _validateTime(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return null;
-    }
-
-    final match = RegExp(r'^(\d{2}):(\d{2})$').firstMatch(text);
-    if (match == null) {
-      return 'Use HH:MM';
-    }
-
-    final hour = int.parse(match.group(1)!);
-    final minute = int.parse(match.group(2)!);
-    if (hour > 23 || minute > 59) {
-      return 'Horario invalido';
-    }
-
-    return null;
-  }
 }
-

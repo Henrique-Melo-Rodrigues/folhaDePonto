@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../models/time_record.dart';
-import '../services/time_record_api.dart';
+import '../data/time_record_store.dart';
+import '../domain/dates.dart';
+import '../domain/domain.g.dart';
+import '../domain/time_record.dart';
 import 'time_record_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.api});
+  const HomeScreen({super.key, required this.store});
 
-  final TimeRecordApi api;
+  final TimeRecordStore store;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -25,14 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reload() {
-    _todayFuture = widget.api.getToday();
-    _monthFuture = widget.api.getMonth(_visibleMonth.year, _visibleMonth.month);
+    _todayFuture = widget.store.getToday();
+    _monthFuture = widget.store.listMonth(_visibleMonth.year, _visibleMonth.month);
   }
 
   void _setMonth(DateTime month) {
     setState(() {
       _visibleMonth = DateTime(month.year, month.month);
-      _monthFuture = widget.api.getMonth(_visibleMonth.year, _visibleMonth.month);
+      _monthFuture = widget.store.listMonth(_visibleMonth.year, _visibleMonth.month);
     });
   }
 
@@ -40,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => TimeRecordFormScreen(
-          api: widget.api,
+          store: widget.store,
           initialRecord: record,
           selectedDate: date ?? DateTime.now(),
         ),
