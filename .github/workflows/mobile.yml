@@ -24,7 +24,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.44.1"
 
       # sqflite_common_ffi roda o SQLite na VM do Dart e carrega a libsqlite3
       # do sistema: sem ela os testes do DAO nao sobem no runner.
@@ -59,7 +58,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.44.1"
 
       - name: Baixar dependencias
         run: flutter pub get
