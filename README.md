@@ -54,7 +54,7 @@ uv run pytest    # testes
 - [x] **WP1** Limpar o repositório + ADR-002
 - [x] **WP2** Domínio + contrato em Python
 - [x] **WP3** Repositório SQLite
-- [ ] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
+- [x] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
 - [ ] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
 - [ ] **WP6** Exportação e backup
 - [ ] **WP7** APK e CI
