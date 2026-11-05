@@ -311,11 +311,11 @@ rels("Serving", [(key, proc) for key, *_, proc in SERV] +
 rels("Assignment", [("AI_tel", key) for key, *_ in SERV], CT)
 
 el("DO_reg", "DataObject", "Lançamento do dia (time_records)",
-   "date (única), day_type, arrival, lunch_start, lunch_end, departure, extra_start, extra_end, notes, status, created_at, updated_at.", CD)
+   "data (única), tipo, entrada, saida_almoco, volta_almoco, saida, entrada_extra, saida_extra, observacao, criado_em, atualizado_em.", CD)
 el("DO_cal", "DataObject", "Data do calendário (calendar_days)",
    "date, nome, origem (nacional, estadual, facultativo, manual, emenda), confirmada, versão da lib.", CD)
 el("DO_pref", "DataObject", "Preferências (settings)", "UF, município, jornada padrão, facultativo conta como folga (padrão: sim), tema.", CD)
-el("DO_ctr", "DataObject", "Contrato do domínio (time_record.json)", "Tipos de dia, marcações, status, padrão de hora. Mantido do projeto atual.", CD)
+el("DO_ctr", "DataObject", "Vocabulário do domínio (vocabulario.py)", "Enums TipoDia, Status e Marcacao: fonte única dos termos. Sucede o contracts/time_record.json da v1.", CD)
 el("DO_bkp", "DataObject", "Arquivo de backup (JSON)", "Versionado; lançamentos, datas manuais, emendas confirmadas, preferências.", CD)
 el("DO_folha", "DataObject", "Folha do mês (texto/CSV)", "Mesma ordem de colunas do papel.", CD)
 rel("Realization", "DO_reg", "BO_reg", CD)
@@ -381,7 +381,7 @@ rels("Triggering", [("PL0", "PL1"), ("PL1", "PL2"), ("PL2", "PL3")], EF)
 GAPS = [("GE1", "Eliminar servidor, API e API key", "eliminate", ["AB1", "TB_old", "TB_net"]),
         ("GE2", "Eliminar React, Flutter e regras em Dart", "eliminate", ["AB2", "AB3", "AB5"]),
         ("GE3", "Eliminar orquestrador, skills e Mongo/Docker", "eliminate", ["AB4", "TB_dock"]),
-        ("GE4", "Manter regras de status e contrato", "keep", ["DO_ctr", "AC_dom"]),
+        ("GE4", "Manter regras de status e vocabulário", "keep", ["DO_ctr", "AC_dom"]),
         ("GE5", "Criar app Python offline com SQLite", "create", ["AC_app", "AC_repo", "TD"]),
         ("GE6", "Criar calendário de feriados e emendas", "create", ["AC_cal", "AC_lib", "DO_cal"]),
         ("GE7", "Criar fechamento do mês (pendências + folha)", "create", ["AS4", "AS5", "T3", "T4"]),
@@ -398,7 +398,7 @@ WPS = [("WP1", "WP1 Limpar o repositório", "Remover Django, React, Flutter, orq
        ("WP5", "WP5 Telas Flet", "Hoje (bater ponto), Mês, Folha, Ajustes.", ["GE5", "GE7", "GB1"]),
        ("WP6", "WP6 Exportação e backup", "Folha em texto/CSV, backup/restauração JSON.", ["GE8"]),
        ("WP7", "WP7 APK e CI", "flet build apk, teste de não-rede, workflow único.", ["GE5"])]
-FEITOS = {"WP1": "concluído em 2026-11-05"}
+FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05"}
 for key, name, doc, gaps in WPS:
     el(key, "WorkPackage", name, doc, EF, status=FEITOS.get(key, "a fazer"))
     rels("Association", [(key, g) for g in gaps], EF)

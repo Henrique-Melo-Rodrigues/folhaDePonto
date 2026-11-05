@@ -204,9 +204,9 @@ para cada elipse.
 
 | ID | Regra | Origem |
 |---|---|---|
-| RN01 | Horário no formato `HH:MM`, entre 00:00 e 23:59. Vazio = sem horário. Marcações: `arrival`, `lunch_start`, `lunch_end`, `departure` (atuais) + **`extra_start`, `extra_end`** (novas, opcionais). | `contracts/time_record.json` + folha oficial |
-| RN02 | **Proposta nova:** as marcações preenchidas seguem a ordem entrada < saída almoço < volta almoço < saída < entrada extra < saída extra. Marcações vazias no meio são permitidas. A extra precisa ter as duas pontas. | lacuna atual: o app aceita saída antes da entrada |
-| RN03 | Status: tipo **não trabalhado** e nenhum horário → `não trabalhado`. Os quatro horários normais preenchidos → `completo` (a extra não influi). Qualquer outro caso → `incompleto`. | `services.py:calculate_status` + vetores golden em `contracts/status_cases.json` |
+| RN01 | Horário no formato `HH:MM`, entre 00:00 e 23:59. Vazio = sem horário. Marcações: `entrada`, `saida_almoco`, `volta_almoco`, `saida`, `entrada_extra`, `saida_extra`. | `dominio/vocabulario.py` + folha oficial |
+| RN02 | **Proposta nova:** as marcações preenchidas seguem a ordem entrada < saída almoço < volta almoço < saída < entrada extra < saída extra. Marcações vazias no meio são permitidas. Saída extra exige entrada extra; entrada extra sozinha é hora extra em andamento (não conta horas). | lacuna atual: o app aceita saída antes da entrada |
+| RN03 | Status: tipo **não trabalhado** e nenhum horário → `não trabalhado`. Os quatro horários normais preenchidos → `completo` (a extra não influi). Qualquer outro caso → `incompleto`. | herdada da v1; vetores golden em `tests/dados/casos_status.json` |
 | RN04 | Um lançamento por data (upsert). `created_at` é preservado na edição. | atual |
 | RN05 | **Emenda candidata:** feriado na **terça** → a segunda anterior. Feriado na **quinta** → a sexta seguinte. Só se o dia candidato for útil. Ex. 2026: 02/01 (sex), 20/04 (seg), 05/06 (sex, Corpus Christi), 10/07 (sex). É sugestão: só vira emenda quando confirmada (UC03) ou cadastrada (UC10). Emenda confirmada = **folga** (D6). | usuário, confirmado |
 | RN06 | Tipo sugerido ao criar um lançamento: feriado → *Feriado*; ponto facultativo (preferência ligada) → *Folga* (obs. nome do facultativo); emenda confirmada → *Folga* (obs. "Emenda"); sábado ou domingo → *Folga*; senão → *Trabalho*. | novo |
@@ -217,8 +217,8 @@ para cada elipse.
 
 Tipos de dia: os sete atuais (`trabalho`, `atividade_teorica`, `folga`,
 `compensacao`, `feriado`, `falta`, `outro`). Nenhum tipo novo: emenda é folga
-(D6). O vocabulário continua em `contracts/time_record.json`, que ganha os dois
-campos de hora extra.
+(D6). O vocabulário fica em `src/folha_ponto/dominio/vocabulario.py` (enums
+`TipoDia`, `Status`, `Marcacao`), com os dois campos de hora extra.
 
 ## 6. Requisitos não funcionais
 
@@ -236,7 +236,7 @@ campos de hora extra.
 | Hoje (baseline) | Alvo (target) | Operação |
 |---|---|---|
 | Regras de status (Python + Dart duplicado) | só Python | **keep** + eliminar a duplicata |
-| Contrato `time_record.json` + gerador para 3 linguagens | contrato lido direto pelo Python | **keep** (simplificado) |
+| Contrato `time_record.json` + gerador para 3 linguagens | vocabulário como módulo Python (`dominio/vocabulario.py`) | **keep** (simplificado) |
 | Django + DRF + API key + WhiteNoise | — | **eliminate** |
 | React/Vite (layout) | UI em Python (Flet) com o mesmo desenho | eliminate + **create** |
 | Flutter + sqflite + adapter remoto | — | **eliminate** |

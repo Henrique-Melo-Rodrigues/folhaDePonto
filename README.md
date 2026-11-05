@@ -41,7 +41,6 @@ Além de resolver um problema real do dia a dia, este projeto é um ambiente del
 | [docs/casos-de-uso.md](docs/casos-de-uso.md) | casos de uso UC01–UC11, regras de negócio, requisitos não funcionais |
 | [docs/arquitetura/](docs/arquitetura/README.md) | modelo ArchiMate (Archi) com as views de cada fase do ADM e o roadmap |
 | [docs/decisions/](docs/decisions/) | ADRs |
-| [contracts/](contracts/) | vocabulário do domínio e vetores golden de status |
 
 ## Como rodar
 
@@ -53,7 +52,7 @@ uv run pytest    # testes
 ## Andamento (roadmap)
 
 - [x] **WP1** Limpar o repositório + ADR-002
-- [ ] **WP2** Domínio + contrato em Python
+- [x] **WP2** Domínio + contrato em Python
 - [ ] **WP3** Repositório SQLite
 - [ ] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
 - [ ] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)

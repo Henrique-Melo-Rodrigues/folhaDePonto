@@ -37,8 +37,13 @@ os horários e os feriados ainda precisavam ser garimpados para preencher a
    facultativos). Feriados de Cubatão e emendas da empresa são cadastrados pelo
    usuário. **Emenda = folga. Ponto facultativo = folga por padrão**, com uma
    preferência para desligar.
-5. **O contrato fica** (`contracts/time_record.json` + `status_cases.json`),
-   mas passa a ser lido direto pelo Python. O gerador de 3 linguagens sai.
+5. **O vocabulário vira um módulo Python** (`src/folha_ponto/dominio/vocabulario.py`).
+   O `contracts/time_record.json` só existia para três linguagens lerem os
+   mesmos termos; com uma linguagem, enums tipados são a fonte única. Os vetores
+   golden (`status_cases.json`) viram dados de teste (`tests/dados/casos_status.json`).
+   Os termos do código seguem o glossário (linguagem ubíqua): `entrada`,
+   `saida_almoco`, `Lancamento`... em vez de `arrival`, `lunch_start`.
+   *(Ajustado no WP2; a primeira versão deste ADR mantinha o JSON.)*
 6. **Arquitetura documentada em ArchiMate** (`docs/arquitetura/`), seguindo o
    TOGAF ADM, com casos de uso em `docs/casos-de-uso.md`.
 
@@ -68,7 +73,7 @@ os horários e os feriados ainda precisavam ser garimpados para preencher a
   orquestrador (`orchestrator.sh`, `scripts/`, `GEMINI.md`, `gemini-code.md`,
   `antigravity.rules.md`, `AGENTS.md`, `agents/`), `skills/`, `.claude-plugin/`,
   `.claude/commands/`, os 3 workflows do CI, `DEPLOY.md` e os documentos do plano
-  MongoDB. Tudo continua recuperável pelo histórico do git (último commit da v1:
+  MongoDB e, no WP2, a pasta `contracts/`. Tudo continua recuperável pelo histórico do git (último commit da v1:
   `cd0760a`).
 - **Não há migração de dados** da v1: os bancos do servidor e do Flutter não
   existem nesta máquina. Se algum aparecer, um importador JSON entra pelo UC09.

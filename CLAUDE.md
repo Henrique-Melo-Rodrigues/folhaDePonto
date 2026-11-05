@@ -14,13 +14,12 @@ O porquê está em `docs/decisions/ADR-002-app-python-offline-no-celular.md`.
 
 ```
 src/folha_ponto/
-  dominio/     regras do dia (Python puro; Core)
+  dominio/     regras do dia (Python puro; Core). vocabulario.py = fonte única dos termos
   calendario/  feriados (lib holidays), facultativos, emendas, datas manuais
   dados/       repositório SQLite (único módulo que fala SQL)
   exportacao/  folha do mês (texto/CSV) e backup JSON
   ui/          telas Flet (só chamam o domínio)
-contracts/     time_record.json (vocabulário) + status_cases.json (vetores golden)
-tests/         pytest
+tests/         pytest (tests/dados/casos_status.json = vetores golden da RN03)
 ```
 
 ## Comandos
