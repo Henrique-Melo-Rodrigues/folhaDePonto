@@ -28,10 +28,12 @@ tests/         pytest (tests/dados/casos_status.json = vetores golden da RN03)
 uv sync
 uv run pytest
 uv run folha-ponto     # app no PC
+uv run flet build apk   # APK (normalmente pelo CI: .github/workflows/ci.yml)
 ```
 
 ## Regras
-- **Offline:** nada de rede no pacote (`tests/test_sem_rede.py` reprova).
+- **Offline:** nada de rede no pacote (`tests/test_sem_rede.py` reprova) e o APK sem a
+  permissão INTERNET (`[tool.flet.android.permission]`; `tests/test_apk.py` e o CI conferem).
 - **Camadas:** a UI não fala SQL; só `dados/` usa `sqlite3`; `dominio/` não importa Flet.
 - **Testes junto com a mudança:** regra nova ou bug corrigido vem com teste.
 - **Linguagem ubíqua:** use os termos do glossário (marcação, lançamento, tipo do dia,

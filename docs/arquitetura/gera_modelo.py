@@ -347,7 +347,7 @@ el("SS_py", "SystemSoftware", "Python embarcado (Flet)", "Runtime Python empacot
 el("SS_sql", "SystemSoftware", "SQLite (sqlite3 da stdlib)", "Banco embutido, arquivo único.", DT)
 el("TS_sto", "TechnologyService", "Armazenamento privado do app", "Diretório de dados do app, apagado só na desinstalação.", DT)
 el("TS_sha", "TechnologyService", "Compartilhamento do Android", "Menu Compartilhar: salvar, WhatsApp, e-mail, Drive.", DT)
-el("ART_apk", "Artifact", "folha-de-ponto.apk", "Gerado por `uv run flet build apk`.", DT)
+el("ART_apk", "Artifact", "folha-de-ponto.apk", "Gerado por `uv run flet build apk` no CI (.github/workflows/ci.yml); sem a permissão INTERNET (RNF01), conferido com aapt2.", DT)
 el("ART_db", "Artifact", "folha_de_ponto.db", "Arquivo SQLite com lancamentos, datas_especiais e preferencias. Pasta: FLET_APP_STORAGE_DATA.", DT)
 el("ART_bkp", "Artifact", "backup-AAAA-MM-DD.json", "Arquivo de backup que o usuário guarda fora do celular.", DT)
 el("ND_pc", "Node", "PC de desenvolvimento", "Onde se programa, testa e gera o APK.", DT)
@@ -398,7 +398,8 @@ WPS = [("WP1", "WP1 Limpar o repositório", "Remover Django, React, Flutter, orq
        ("WP5", "WP5 Telas Flet", "Hoje (bater ponto), Mês, Folha, Ajustes.", ["GE5", "GE7", "GB1"]),
        ("WP6", "WP6 Exportação e backup", "Folha em texto/CSV, backup/restauração JSON.", ["GE8"]),
        ("WP7", "WP7 APK e CI", "flet build apk, teste de não-rede, workflow único.", ["GE5"])]
-FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05", "WP5": "concluído em 2026-11-05", "WP6": "concluído em 2026-11-05"}
+FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05", "WP5": "concluído em 2026-11-05", "WP6": "concluído em 2026-11-05",
+          "WP7": "configurado em 2026-11-05; falta o 1º build no CI"}
 for key, name, doc, gaps in WPS:
     el(key, "WorkPackage", name, doc, EF, status=FEITOS.get(key, "a fazer"))
     rels("Association", [(key, g) for g in gaps], EF)

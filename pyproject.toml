@@ -26,3 +26,18 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+# ---- APK (WP7): uv run flet build apk ------------------------------------------
+[tool.flet]
+product = "Folha de Ponto"
+org = "io.github.henrique_melo_rodrigues"
+company = "Henrique Rodrigues"
+copyright = "Henrique Rodrigues"
+
+[tool.flet.app]
+path = "src"        # o APK leva src/main.py e o pacote folha_ponto
+module = "main"
+
+[tool.flet.android.permission]
+# RNF01: 100% offline. O flet build inclui INTERNET por padrão; aqui ela sai.
+"android.permission.INTERNET" = false

@@ -50,6 +50,18 @@ uv run pytest    # testes
 uv run folha-ponto   # abre o app no PC (janela Flet)
 ```
 
+### APK (Android)
+
+O APK é gerado pelo CI (`.github/workflows/ci.yml`) em push na `main`, em tag `v*`
+ou manualmente (*Run workflow*), e fica nos *artifacts* da execução. O CI reprova
+se o APK pedir a permissão `INTERNET` (o app é 100% offline).
+
+Para gerar no PC (a CLI do Flet instala Flutter e Android SDK na primeira vez):
+
+```bash
+uv run flet build apk     # saída em build/apk/
+```
+
 ## Andamento (roadmap)
 
 - [x] **WP1** Limpar o repositório + ADR-002
@@ -58,4 +70,4 @@ uv run folha-ponto   # abre o app no PC (janela Flet)
 - [x] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
 - [x] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
 - [x] **WP6** Exportação e backup
-- [ ] **WP7** APK e CI
+- [ ] **WP7** APK e CI: configuração e workflow prontos; falta o primeiro build do APK no GitHub Actions

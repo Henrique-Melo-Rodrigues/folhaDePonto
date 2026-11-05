@@ -1,0 +1,74 @@
+name: CI
+
+# Workflow único da v2 (ADR-002): testes em todo push/PR; APK na main, em tag ou manual.
+on:
+  push:
+    branches: [main, "refactor/**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Instalar dependências (uv.lock travado)
+        run: uv sync --locked
+
+      - name: Rodar testes (inclui a guarda de rede RNF01 e a config do APK)
+        run: uv run pytest
+
+  apk:
+    needs: testes
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Instalar dependências
+        run: uv sync --locked
+
+      # O flet build baixa a versão do Flutter que casa com o Flet; o cache evita repetir.
+      - name: Cache do Flutter do Flet
+        uses: actions/cache@v4
+        with:
+          path: ~/flutter
+          key: flutter-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
+      - name: Gerar APK
+        run: uv run flet build apk --yes --verbose
+
+      - name: Conferir que o APK não pede INTERNET (RNF01)
+        run: |
+          apk=$(ls build/apk/*.apk | head -n1)
+          aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n1)
+          "$aapt2" dump permissions "$apk" | tee permissoes.txt
+          if grep -q "android.permission.INTERNET" permissoes.txt; then
+            echo "::error::O APK pede a permissão INTERNET; o app é 100% offline (RNF01)."
+            exit 1
+          fi
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: folha-de-ponto-apk
+          path: build/apk/*.apk
+          if-no-files-found: error
