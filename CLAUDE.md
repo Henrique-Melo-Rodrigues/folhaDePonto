@@ -18,7 +18,7 @@ src/folha_ponto/
   calendario/  feriados (lib holidays), facultativos, emendas, datas manuais
   dados/       repositório SQLite (único módulo que fala SQL)
   exportacao/  folha do mês (texto/CSV) e backup JSON
-  ui/          telas Flet (só chamam o domínio)
+  ui/          servicos.py (casos de uso, sem Flet) + telas/ Flet finas
 tests/         pytest (tests/dados/casos_status.json = vetores golden da RN03)
 ```
 
@@ -27,6 +27,7 @@ tests/         pytest (tests/dados/casos_status.json = vetores golden da RN03)
 ```bash
 uv sync
 uv run pytest
+uv run folha-ponto     # app no PC
 ```
 
 ## Regras

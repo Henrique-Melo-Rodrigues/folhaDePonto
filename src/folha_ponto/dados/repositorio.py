@@ -218,10 +218,12 @@ class Repositorio:
         ))
 
     def apagar_data_manual(self, dia: date, nome: str) -> bool:
+        """Apaga a data manual. Uma recorrente pode ser apagada por qualquer ano em que aparece."""
         cursor = self._transacao(lambda c: c.execute(
-            "DELETE FROM datas_especiais WHERE data = ? AND nome = ? AND origem = ?",
-            [dia.isoformat(), nome, Origem.MANUAL.value]))
-        return cursor.rowcount == 1
+            "DELETE FROM datas_especiais WHERE origem = ? AND nome = ? "
+            "AND (data = ? OR (recorrente = 1 AND substr(data, 6) = ?))",
+            [Origem.MANUAL.value, nome, dia.isoformat(), dia.strftime("%m-%d")]))
+        return cursor.rowcount >= 1
 
     def ocultar_data(self, dia: date, nome: str, oculta: bool = True) -> bool:
         cursor = self._transacao(lambda c: c.execute(

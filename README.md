@@ -47,6 +47,7 @@ Além de resolver um problema real do dia a dia, este projeto é um ambiente del
 ```bash
 uv sync          # cria o .venv com as dependências travadas no uv.lock
 uv run pytest    # testes
+uv run folha-ponto   # abre o app no PC (janela Flet)
 ```
 
 ## Andamento (roadmap)
@@ -55,6 +56,6 @@ uv run pytest    # testes
 - [x] **WP2** Domínio + contrato em Python
 - [x] **WP3** Repositório SQLite
 - [x] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
-- [ ] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
+- [x] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
 - [ ] **WP6** Exportação e backup
 - [ ] **WP7** APK e CI

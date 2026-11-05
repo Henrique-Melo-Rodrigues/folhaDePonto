@@ -277,7 +277,7 @@ rel("Access", "AB3", "DB_fl", CB, access="rw")
 
 el("AC_app", "ApplicationComponent", "App Folha de Ponto (pacote folha_ponto)",
    "Um único pacote Python. Roda no celular (APK Flet) e no PC (uv run).", CT)
-el("AC_ui", "ApplicationComponent", "Interface (Flet)", "Telas finas: só chamam os serviços do domínio.", CT,
+el("AC_ui", "ApplicationComponent", "Interface (Flet)", "servicos.py orquestra os casos de uso sem Flet (testável); telas/ Hoje, Mês, Folha, Ajustes e o formulário do dia são finas e recebem um Contexto, não a Page.", CT,
    modulo="folha_ponto/ui/", subdominio_DDD="Generic (framework Flet)")
 el("AC_dom", "ApplicationComponent", "Domínio: regras do dia",
    "Status, validação HH:MM e ordem das marcações, horas e saldo, pendências e folha do mês. Python puro.", CT,
@@ -398,7 +398,7 @@ WPS = [("WP1", "WP1 Limpar o repositório", "Remover Django, React, Flutter, orq
        ("WP5", "WP5 Telas Flet", "Hoje (bater ponto), Mês, Folha, Ajustes.", ["GE5", "GE7", "GB1"]),
        ("WP6", "WP6 Exportação e backup", "Folha em texto/CSV, backup/restauração JSON.", ["GE8"]),
        ("WP7", "WP7 APK e CI", "flet build apk, teste de não-rede, workflow único.", ["GE5"])]
-FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05"}
+FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05", "WP5": "concluído em 2026-11-05"}
 for key, name, doc, gaps in WPS:
     el(key, "WorkPackage", name, doc, EF, status=FEITOS.get(key, "a fazer"))
     rels("Association", [(key, g) for g in gaps], EF)

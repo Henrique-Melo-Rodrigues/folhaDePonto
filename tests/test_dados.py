@@ -198,6 +198,15 @@ def test_apagar_data_manual_nao_apaga_automatica(repo):
     assert repo.apagar_data_manual(date(2026, 4, 9), "Local") is True
 
 
+def test_recorrente_pode_ser_apagada_pelo_ano_projetado(repo):
+    repo.salvar_data_manual(DataDoCalendario(date(2026, 4, 9), "Aniversário da cidade", Natureza.FERIADO,
+                                             Origem.MANUAL, recorrente=True))
+    repo.salvar_data_manual(DataDoCalendario(date(2026, 4, 9), "Só em 2026", Natureza.FERIADO, Origem.MANUAL))
+    assert repo.apagar_data_manual(date(2027, 4, 9), "Só em 2026") is False  # não recorrente: só pela data
+    assert repo.apagar_data_manual(date(2028, 4, 9), "Aniversário da cidade") is True
+    assert [d.nome for d in repo.datas_do_periodo(date(2026, 1, 1), date(2030, 12, 31))] == ["Só em 2026"]
+
+
 def test_calendario_do_mes_aplica_precedencia_e_ignora_ocultas(repo):
     repo.substituir_calendario_automatico(2026, [
         auto(date(2026, 4, 21), "Tiradentes"),
