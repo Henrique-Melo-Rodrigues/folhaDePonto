@@ -5,7 +5,8 @@ from __future__ import annotations
 import flet as ft
 
 from folha_ponto.dados import DataDoCalendario, Origem
-from folha_ponto.dominio import ErroDeValidacao, Marcacao, MARCACOES_NORMAIS, Natureza, escrever_horario
+from folha_ponto.dominio import MARCACOES_NORMAIS, ErroDeValidacao, Marcacao, Natureza, escrever_horario
+from folha_ponto.exportacao import Backup, ErroDeBackup
 from folha_ponto.ui.telas.base import Contexto, Tela, quando_clicar
 
 _NATUREZAS_MANUAIS = ((Natureza.FERIADO, "Feriado (ex.: municipal)"),
@@ -52,6 +53,13 @@ class TelaAjustes(Tela):
             self.facultativo, self.escuro, self.erro,
             ft.Row([ft.FilledButton("Salvar preferências", icon=ft.Icons.CHECK, expand=True,
                                     on_click=quando_clicar(self.salvar_preferencias))]),
+            ft.Divider(),
+            ft.Text("Backup", size=20, weight=ft.FontWeight.BOLD),   # UC09
+            ft.Text("Guarde o arquivo fora do celular (Drive, e-mail): sem ele, trocar de aparelho perde o histórico.",
+                    size=12, color=paleta.texto_fraco),
+            ft.Row([ft.Button("Fazer backup", icon=ft.Icons.BACKUP, on_click=quando_clicar(self.fazer_backup)),
+                    ft.TextButton("Restaurar", icon=ft.Icons.RESTORE, on_click=quando_clicar(self.pedir_backup))],
+                   wrap=True),
             ft.Divider(),
             ft.Row([
                 ft.IconButton(ft.Icons.CHEVRON_LEFT, on_click=quando_clicar(lambda: self.trocar_ano(-1))),
@@ -140,3 +148,51 @@ class TelaAjustes(Tela):
         self.atualizar()
         self.ctx.redesenhar()
         self.ctx.avisar(" ".join(avisos) or "Calendário recalculado.", erro=bool(avisos))
+
+    # ---- UC09 ---------------------------------------------------------------------
+    def fazer_backup(self) -> None:
+        nome, conteudo = self.servicos.gerar_backup()
+        dados = conteudo.encode("utf-8")
+
+        def enviar(acao) -> None:
+            self.ctx.fechar_dialogo()
+            acao(nome, dados)
+
+        self.ctx.abrir_dialogo(ft.AlertDialog(
+            title=ft.Text("Backup pronto"),
+            content=ft.Text(f"{nome}: compartilhe (Drive, e-mail, WhatsApp) ou salve numa pasta."),
+            actions=[ft.TextButton("Cancelar", on_click=quando_clicar(self.ctx.fechar_dialogo)),
+                     ft.TextButton("Salvar arquivo", on_click=quando_clicar(lambda: enviar(self.ctx.salvar_arquivo))),
+                     ft.FilledButton("Compartilhar", on_click=quando_clicar(
+                         lambda: enviar(lambda n, d: self.ctx.compartilhar_arquivo(n, d, "application/json"))))]))
+
+    def pedir_backup(self) -> None:
+        self.ctx.escolher_arquivo(self.confirmar_restauracao, ["json"])
+
+    def confirmar_restauracao(self, conteudo: bytes) -> None:
+        """UC09 2': valida e mostra quantos dias serão importados; 3': substituir ou mesclar."""
+        try:
+            backup = self.servicos.ler_backup(conteudo)
+        except ErroDeBackup as e:   # E1: nada é importado
+            self.ctx.avisar(str(e), erro=True)
+            return
+        quando = f" de {backup.gerado_em:%d/%m/%Y %H:%M}" if backup.gerado_em else ""
+        self.ctx.abrir_dialogo(ft.AlertDialog(
+            title=ft.Text("Restaurar backup?"),
+            content=ft.Text(
+                f"Backup{quando} com {backup.dias} dia(s) lançado(s) e {len(backup.dados.datas_manuais)} "
+                "data(s) cadastrada(s).\n\nSubstituir tudo: o aparelho fica igual ao backup.\n"
+                "Mesclar: em cada dia vence o lançamento editado por último; as preferências daqui ficam."),
+            actions=[ft.TextButton("Cancelar", on_click=quando_clicar(self.ctx.fechar_dialogo)),
+                     ft.TextButton("Substituir tudo", on_click=quando_clicar(lambda: self.restaurar(backup, True))),
+                     ft.FilledButton("Mesclar", on_click=quando_clicar(lambda: self.restaurar(backup, False)))]))
+
+    def restaurar(self, backup: Backup, substituir: bool) -> None:
+        self.ctx.fechar_dialogo()
+        resultado = self.servicos.restaurar(backup, substituir)
+        self.ctx.aplicar_tema()       # substituir pode trazer outro tema
+        self._montar_campos()
+        self.atualizar()
+        self.ctx.redesenhar()
+        mantidos = f" ({resultado.lancamentos_mantidos} mantido(s) do aparelho)" if resultado.lancamentos_mantidos else ""
+        self.ctx.avisar(f"Backup restaurado: {resultado.lancamentos_gravados} dia(s) importado(s){mantidos}.")

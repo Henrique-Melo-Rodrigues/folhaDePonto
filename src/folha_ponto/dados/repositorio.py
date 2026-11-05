@@ -79,6 +79,32 @@ class Carimbos:
     atualizado_em: datetime
 
 
+@dataclass(frozen=True)
+class LancamentoCarimbado:
+    lancamento: Lancamento
+    carimbos: Carimbos
+
+
+@dataclass(frozen=True)
+class Instantaneo:
+    """Tudo o que é do usuário (UC09): lançamentos com carimbos, datas manuais (UC10,
+    emendas confirmadas), datas da lib que ele ocultou e preferências. O calendário
+    automático fica de fora: é refeito pela lib (UC06)."""
+
+    lancamentos: tuple[LancamentoCarimbado, ...]
+    datas_manuais: tuple[DataDoCalendario, ...]
+    datas_ocultas: tuple[DataDoCalendario, ...]
+    preferencias: Preferencias
+
+
+@dataclass(frozen=True)
+class ResultadoDaImportacao:
+    lancamentos_gravados: int
+    lancamentos_mantidos: int     # mesclar: o do aparelho era mais recente
+    datas_manuais: int
+    datas_ocultas: int
+
+
 # Quando uma data tem mais de uma marca, vale a mais forte.
 _PRECEDENCIA = {Natureza.FERIADO: 0, Natureza.EMENDA: 1, Natureza.FACULTATIVO: 2, Natureza.EMENDA_SUGERIDA: 3}
 
@@ -156,12 +182,7 @@ class Repositorio:
     def salvar(self, lancamento: Lancamento) -> Lancamento:
         """Upsert por data (RN04). Preserva `criado_em`; atualiza `atualizado_em`."""
         agora = self._relogio().isoformat()
-        colunas = {
-            "data": lancamento.data.isoformat(),
-            "tipo": lancamento.tipo.value,
-            **{m.value: escrever_horario(lancamento.marcacoes[m]) or None for m in Marcacao},
-            "observacao": lancamento.observacao,
-        }
+        colunas = _colunas_do_lancamento(lancamento)
         nomes = ", ".join(colunas)
         valores = ", ".join(f":{c}" for c in colunas)
         atualiza = ", ".join(f"{c} = excluded.{c}" for c in colunas if c != "data")
@@ -259,6 +280,70 @@ class Repositorio:
                            [Origem.MANUAL.value])
         return {int(l[0]) for l in linhas}
 
+    # ---- backup (UC09) ----------------------------------------------------------
+    def exportar(self) -> Instantaneo:
+        with self._trava:  # leitura consistente: tudo na mesma transação
+            self._conexao.execute("BEGIN")
+            try:
+                lancamentos = tuple(
+                    LancamentoCarimbado(_lancamento_de(l), Carimbos(datetime.fromisoformat(l["criado_em"]),
+                                                                    datetime.fromisoformat(l["atualizado_em"])))
+                    for l in self._conexao.execute("SELECT * FROM lancamentos ORDER BY data"))
+                datas = [_data_do_calendario_de(l) for l in self._conexao.execute(
+                    "SELECT * FROM datas_especiais WHERE origem = ? OR oculta = 1 ORDER BY data, nome",
+                    [Origem.MANUAL.value])]
+                preferencias = self.preferencias()
+            finally:
+                self._conexao.execute("COMMIT")
+        return Instantaneo(lancamentos,
+                           tuple(d for d in datas if d.origem is Origem.MANUAL),
+                           tuple(d for d in datas if d.origem is not Origem.MANUAL),
+                           preferencias)
+
+    def importar(self, dados: Instantaneo, substituir: bool) -> ResultadoDaImportacao:
+        """UC09 3'-4', numa transação única (qualquer erro = rollback).
+
+        substituir: o banco passa a ser o backup (o calendário automático é refeito depois).
+        mesclar: por data, vence o lançamento com `atualizado_em` mais recente; datas manuais
+        e ocultas do backup são acrescentadas; as preferências do aparelho ficam.
+        """
+        def comandos(c: sqlite3.Connection) -> ResultadoDaImportacao:
+            if substituir:
+                c.execute("DELETE FROM lancamentos")
+                c.execute("DELETE FROM datas_especiais")
+                c.execute("DELETE FROM preferencias")
+                _gravar_preferencias(c, dados.preferencias)
+            gravados = mantidos = 0
+            for item in dados.lancamentos:
+                l, carimbos = item.lancamento, item.carimbos
+                atual = c.execute("SELECT atualizado_em FROM lancamentos WHERE data = ?",
+                                  [l.data.isoformat()]).fetchone()
+                if atual is not None and datetime.fromisoformat(atual[0]) >= carimbos.atualizado_em:
+                    mantidos += 1
+                    continue
+                colunas = _colunas_do_lancamento(l)
+                c.execute(f"INSERT OR REPLACE INTO lancamentos ({', '.join(colunas)}, criado_em, atualizado_em) "
+                          f"VALUES ({', '.join('?' * len(colunas))}, ?, ?)",
+                          [*colunas.values(), carimbos.criado_em.isoformat(), carimbos.atualizado_em.isoformat()])
+                gravados += 1
+            for d in dados.datas_manuais:
+                if d.origem is not Origem.MANUAL:
+                    raise ValueError(f"Data manual com origem {d.origem}: {d}")
+                c.execute("INSERT OR REPLACE INTO datas_especiais (data, nome, natureza, origem, recorrente, oculta, "
+                          "fonte) VALUES (?, ?, ?, ?, ?, 0, '')",
+                          [d.data.isoformat(), d.nome, d.natureza.value, d.origem.value, int(d.recorrente)])
+            for d in dados.datas_ocultas:
+                # Se o ano ainda não tem calendário, a linha fica como marcador oculto; o
+                # preparo do ano (UC06) a substitui preservando o "oculta".
+                c.execute("INSERT OR IGNORE INTO datas_especiais (data, nome, natureza, origem, recorrente, oculta, "
+                          "fonte) VALUES (?, ?, ?, ?, 0, 1, ?)",
+                          [d.data.isoformat(), d.nome, d.natureza.value, d.origem.value, d.fonte])
+                c.execute("UPDATE datas_especiais SET oculta = 1 WHERE data = ? AND nome = ? AND origem != ?",
+                          [d.data.isoformat(), d.nome, Origem.MANUAL.value])
+            return ResultadoDaImportacao(gravados, mantidos, len(dados.datas_manuais), len(dados.datas_ocultas))
+
+        return self._transacao(comandos)
+
     # ---- preferências ---------------------------------------------------------
     def preferencias(self) -> Preferencias:
         valores = {r["chave"]: json.loads(r["valor"]) for r in self._ler("SELECT chave, valor FROM preferencias")}
@@ -268,18 +353,27 @@ class Repositorio:
         return Preferencias(**{k: v for k, v in valores.items() if k in conhecidas})
 
     def salvar_preferencias(self, preferencias: Preferencias) -> None:
-        valores = asdict(preferencias)
-        valores["jornada"] = {k: v.strftime("%H:%M") for k, v in valores["jornada"].items()}
+        self._transacao(lambda c: _gravar_preferencias(c, preferencias))
 
-        def comandos(c: sqlite3.Connection) -> None:
-            for chave, valor in valores.items():
-                c.execute("INSERT OR REPLACE INTO preferencias (chave, valor) VALUES (?, ?)",
-                          [chave, json.dumps(valor, ensure_ascii=False)])
 
-        self._transacao(comandos)
+def _gravar_preferencias(c: sqlite3.Connection, preferencias: Preferencias) -> None:
+    valores = asdict(preferencias)
+    valores["jornada"] = {k: v.strftime("%H:%M") for k, v in valores["jornada"].items()}
+    for chave, valor in valores.items():
+        c.execute("INSERT OR REPLACE INTO preferencias (chave, valor) VALUES (?, ?)",
+                  [chave, json.dumps(valor, ensure_ascii=False)])
 
 
 # ---- conversões linha <-> domínio ---------------------------------------------
+def _colunas_do_lancamento(lancamento: Lancamento) -> dict[str, object]:
+    return {
+        "data": lancamento.data.isoformat(),
+        "tipo": lancamento.tipo.value,
+        **{m.value: escrever_horario(lancamento.marcacoes[m]) or None for m in Marcacao},
+        "observacao": lancamento.observacao,
+    }
+
+
 def _lancamento_de(linha: sqlite3.Row) -> Lancamento:
     return Lancamento(
         data=date.fromisoformat(linha["data"]),

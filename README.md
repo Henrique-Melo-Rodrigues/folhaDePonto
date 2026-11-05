@@ -57,5 +57,5 @@ uv run folha-ponto   # abre o app no PC (janela Flet)
 - [x] **WP3** Repositório SQLite
 - [x] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
 - [x] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
-- [ ] **WP6** Exportação e backup
+- [x] **WP6** Exportação e backup
 - [ ] **WP7** APK e CI

@@ -41,10 +41,26 @@ class TelaFolha(Tela):
             ]
             return controles
 
+        controles.append(ft.Row([  # UC08 2': exportar
+            ft.Button("Texto", icon=ft.Icons.SHARE, on_click=quando_clicar(self.compartilhar_texto)),
+            ft.Button("CSV", icon=ft.Icons.SHARE, on_click=quando_clicar(self.compartilhar_csv)),
+            ft.TextButton("Copiar", icon=ft.Icons.COPY, on_click=quando_clicar(self.copiar)),
+        ], wrap=True))
         controles.append(self._cabecalho())
         controles += [self._linha(linha) for linha in mes.folha()]
         controles.append(ft.Text("Toque numa linha para marcá-la como copiada.", size=12, color=paleta.texto_fraco))
         return controles
+
+    def compartilhar_texto(self) -> None:
+        nome, texto = self.servicos.folha_em_texto(self.ctx.ano, self.ctx.mes)
+        self.ctx.compartilhar_texto(texto, assunto=nome.removesuffix(".txt"))
+
+    def compartilhar_csv(self) -> None:
+        nome, conteudo = self.servicos.folha_em_csv(self.ctx.ano, self.ctx.mes)
+        self.ctx.compartilhar_arquivo(nome, conteudo.encode("utf-8-sig"), "text/csv")  # BOM: acentos no Excel
+
+    def copiar(self) -> None:
+        self.ctx.copiar(self.servicos.folha_em_texto(self.ctx.ano, self.ctx.mes)[1])
 
     def mostrar_mesmo_assim(self) -> None:
         self.ver_mesmo_assim = True

@@ -5,7 +5,9 @@ Rodar no PC:  uv run folha-ponto
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import date
+from pathlib import Path
 
 import flet as ft
 
@@ -33,6 +35,7 @@ class App:
         self.telas: dict[str, Tela] = {"hoje": TelaHoje(self), "mes": TelaMes(self),
                                        "folha": TelaFolha(self), "ajustes": TelaAjustes(self)}
         self.aba = "hoje"
+        self._servicos_do_aparelho: dict[type, object] = {}
         self.corpo = ft.Container(expand=True, padding=12)
 
         page.title = "Folha de Ponto"
@@ -81,6 +84,53 @@ class App:
         self.page.theme = ft.Theme(color_scheme_seed=p.primaria)
         self.page.dark_theme = ft.Theme(color_scheme_seed=p.primaria)
         self.page.bgcolor = p.fundo
+
+    # ---- serviços do aparelho (assíncronos no Flet 1.x) ---------------------------
+    def _servico(self, tipo):
+        """Uma instância de cada serviço (ao ser criado, ele se registra na página)."""
+        if tipo not in self._servicos_do_aparelho:
+            self._servicos_do_aparelho[tipo] = tipo()
+        return self._servicos_do_aparelho[tipo]
+
+    def _em_segundo_plano(self, tarefa: Callable[[], Awaitable[None]], falha: str) -> None:
+        async def executar() -> None:
+            try:
+                await tarefa()
+            except Exception as e:  # ex.: plataforma sem menu Compartilhar
+                self.avisar(f"{falha}: {e}", erro=True)
+        self.page.run_task(executar)
+
+    def compartilhar_texto(self, texto: str, assunto: str) -> None:
+        self._em_segundo_plano(lambda: self._servico(ft.Share).share_text(texto, subject=assunto), "Não deu para compartilhar")
+
+    def compartilhar_arquivo(self, nome: str, conteudo: bytes, mime: str) -> None:
+        arquivo = ft.ShareFile.from_bytes(conteudo, mime_type=mime, name=nome)
+        self._em_segundo_plano(lambda: self._servico(ft.Share).share_files([arquivo], subject=nome), "Não deu para compartilhar")
+
+    def salvar_arquivo(self, nome: str, conteudo: bytes) -> None:
+        async def salvar() -> None:
+            caminho = await self._servico(ft.FilePicker).save_file(file_name=nome, src_bytes=conteudo)
+            if caminho:
+                self.avisar(f"Salvo em {caminho}.")
+        self._em_segundo_plano(salvar, "Não deu para salvar")
+
+    def copiar(self, texto: str) -> None:
+        async def copiar() -> None:
+            await self._servico(ft.Clipboard).set(texto)
+            self.avisar("Copiado.")
+        self._em_segundo_plano(copiar, "Não deu para copiar")
+
+    def escolher_arquivo(self, ao_escolher: Callable[[bytes], None], extensoes: list[str]) -> None:
+        async def escolher() -> None:
+            arquivos = await self._servico(ft.FilePicker).pick_files(
+                file_type=ft.FilePickerFileType.CUSTOM, allowed_extensions=extensoes, with_data=True)
+            if not arquivos:
+                return  # cancelou
+            arquivo = arquivos[0]
+            conteudo = arquivo.bytes if arquivo.bytes is not None else Path(arquivo.path).read_bytes()
+            ao_escolher(conteudo)
+            self.redesenhar()
+        self._em_segundo_plano(escolher, "Não deu para abrir o arquivo")
 
     # ---- internos ---------------------------------------------------------------
     def _recarregar_aba(self) -> None:

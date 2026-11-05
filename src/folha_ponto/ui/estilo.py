@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from datetime import date
 
 from folha_ponto.dominio import Natureza, Status
+from folha_ponto.exportacao.folha import MESES
 
-MESES = ("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto",
-         "Setembro", "Outubro", "Novembro", "Dezembro")
 DIAS_DA_SEMANA = ("Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo")
 DIAS_CURTOS = ("S", "T", "Q", "Q", "S", "S", "D")
 

@@ -324,3 +324,98 @@ def test_ui_nao_fala_sql():
 def test_so_a_ui_importa_flet(pasta):
     for arquivo, nomes in _modulos_importados(pasta):
         assert "flet" not in nomes, arquivo
+
+
+# ---- WP6: exportar a folha (UC08 2') e backup (UC09) ------------------------------
+class Aparelho:
+    """Grava o que as telas pediram ao aparelho (compartilhar, salvar, copiar, escolher)."""
+
+    def __init__(self, app, arquivo_escolhido=None):
+        self.chamadas = []
+        app.compartilhar_texto = lambda texto, assunto: self.chamadas.append(("texto", assunto, texto))
+        app.compartilhar_arquivo = lambda nome, dados, mime: self.chamadas.append(("arquivo", nome, dados, mime))
+        app.salvar_arquivo = lambda nome, dados: self.chamadas.append(("salvar", nome, dados))
+        app.copiar = lambda texto: self.chamadas.append(("copiar", texto))
+        app.escolher_arquivo = lambda ao_escolher, extensoes: ao_escolher(arquivo_escolhido)
+
+
+def test_folha_compartilha_texto_csv_e_copia(app):
+    app.servicos.salvar_dia(date(2026, 4, 1), TipoDia.TRABALHO, COMPLETO)
+    aparelho = Aparelho(app)
+    app.ir_para("folha")
+    clicar(botao(corpo(app), "Ver mesmo assim"))
+    clicar(botao(corpo(app), "Texto"))
+    clicar(botao(corpo(app), "CSV"))
+    clicar(botao(corpo(app), "Copiar"))
+    (_, assunto, texto), (_, nome, dados, mime), (_, copiado) = aparelho.chamadas
+    assert assunto == "folha-2026-04" and "01 Qua  07:45 12:00   13:00 14:45" in texto
+    assert (nome, mime) == ("folha-2026-04.csv", "text/csv") and dados.startswith(b"\xef\xbb\xbfdia;")
+    assert copiado == texto
+
+
+def test_fazer_backup_compartilha_ou_salva(app, pagina):
+    app.servicos.salvar_dia(date(2026, 4, 1), TipoDia.TRABALHO, COMPLETO)
+    aparelho = Aparelho(app)
+    app.ir_para("ajustes")
+    clicar(botao(corpo(app), "Fazer backup"))
+    clicar(botao(pagina.dialogo, "Compartilhar"))
+    assert pagina.dialogo is None
+    clicar(botao(corpo(app), "Fazer backup"))
+    clicar(botao(pagina.dialogo, "Salvar arquivo"))
+    (tipo1, nome1, dados1, mime), (tipo2, nome2, dados2) = aparelho.chamadas
+    assert (tipo1, tipo2, mime) == ("arquivo", "salvar", "application/json")
+    assert nome1 == nome2 == "backup-2026-04-22.json" and dados1 == dados2
+    assert b'"2026-04-01"' in dados1
+
+
+def test_restaurar_pelo_botao_mostra_resumo_e_mescla(app, pagina, relogio):
+    with Repositorio(":memory:") as outro_repo:
+        outro = Servicos(outro_repo, relogio)
+        outro.salvar_dia(date(2026, 4, 2), TipoDia.TRABALHO, COMPLETO, "do backup")
+        _, conteudo = outro.gerar_backup()
+    app.servicos.salvar_dia(date(2026, 4, 1), TipoDia.TRABALHO, COMPLETO, "do aparelho")
+    Aparelho(app, conteudo.encode("utf-8"))
+    app.ir_para("ajustes")
+    clicar(botao(corpo(app), "Restaurar"))
+    assert any("1 dia(s) lançado(s)" in t for t in textos(pagina.dialogo))
+    clicar(botao(pagina.dialogo, "Mesclar"))
+    assert pagina.dialogo is None
+    assert {l.observacao for l in app.servicos.repo.listar_mes(2026, 4)} == {"do aparelho", "do backup"}
+    assert pagina.avisos[-1] == "Backup restaurado: 1 dia(s) importado(s)."
+
+
+def test_restaurar_substituindo_traz_as_preferencias(app, pagina, relogio):
+    with Repositorio(":memory:") as outro_repo:
+        outro = Servicos(outro_repo, relogio)
+        outro.salvar_preferencias(uf="SP", municipio="Cubatão", jornada=COMPLETO, facultativo_e_folga=True,
+                                  tema="escuro")
+        _, conteudo = outro.gerar_backup()
+    app.servicos.salvar_dia(date(2026, 4, 1), TipoDia.TRABALHO, COMPLETO)
+    Aparelho(app, conteudo.encode("utf-8"))
+    app.ir_para("ajustes")
+    clicar(botao(corpo(app), "Restaurar"))
+    clicar(botao(pagina.dialogo, "Substituir tudo"))
+    assert app.servicos.repo.listar_mes(2026, 4) == []
+    assert pagina.theme_mode == ft.ThemeMode.DARK and app.telas["ajustes"].escuro.value is True
+
+
+def test_restaurar_arquivo_invalido_avisa_e_nao_importa(app, pagina):
+    app.servicos.salvar_dia(date(2026, 4, 1), TipoDia.TRABALHO, COMPLETO)
+    Aparelho(app, b'{"formato": "outro"}')
+    app.ir_para("ajustes")
+    clicar(botao(corpo(app), "Restaurar"))
+    assert pagina.dialogo is None and pagina.avisos[-1] == "O arquivo não é um backup da Folha de Ponto."
+    assert len(app.servicos.repo.listar_mes(2026, 4)) == 1
+
+
+def test_falha_do_servico_do_aparelho_vira_aviso(app, pagina):
+    """Ex.: plataforma sem menu Compartilhar. A tarefa assíncrona não pode morrer calada."""
+    import asyncio
+
+    pagina.run_task = lambda tarefa: asyncio.run(tarefa())
+
+    async def quebra():
+        raise RuntimeError("sem suporte")
+
+    app._em_segundo_plano(quebra, "Não deu para compartilhar")
+    assert pagina.avisos[-1] == "Não deu para compartilhar: sem suporte"

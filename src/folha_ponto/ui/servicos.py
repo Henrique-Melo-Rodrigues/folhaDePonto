@@ -10,8 +10,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 
-from folha_ponto import calendario
-from folha_ponto.dados import CalendarioDoMes, DataDoCalendario, Origem, Repositorio
+from folha_ponto import calendario, exportacao
+from folha_ponto.dados import CalendarioDoMes, DataDoCalendario, Origem, Repositorio, ResultadoDaImportacao
 from folha_ponto.dominio import (
     DataEspecial,
     ErroDeValidacao,
@@ -27,6 +27,9 @@ from folha_ponto.dominio import (
 )
 from folha_ponto.dominio.lancamento import Jornada
 from folha_ponto.dominio.preferencias import Preferencias
+from folha_ponto.exportacao import Backup
+from folha_ponto.exportacao import backup as arquivo_de_backup
+from folha_ponto.exportacao import folha as arquivo_da_folha
 
 OBSERVACAO_DE_EMENDA = "Emenda"  # RN06
 
@@ -218,6 +221,40 @@ class Servicos:
         if (anterior.uf, anterior.facultativo_e_folga) != (nova.uf, nova.facultativo_e_folga):
             return self.recalcular_calendario()
         return []
+
+    # ---- UC08 2': exportar a folha ------------------------------------------------
+    def folha_em_texto(self, ano: int, mes: int) -> tuple[str, str]:
+        """(nome do arquivo, conteúdo) da folha em texto."""
+        m = self.mes(ano, mes)
+        return arquivo_da_folha.nome_do_arquivo(m, "txt"), exportacao.folha_em_texto(m, self.hoje())
+
+    def folha_em_csv(self, ano: int, mes: int) -> tuple[str, str]:
+        m = self.mes(ano, mes)
+        return arquivo_da_folha.nome_do_arquivo(m, "csv"), exportacao.folha_em_csv(m)
+
+    # ---- UC09 -----------------------------------------------------------------------
+    def gerar_backup(self) -> tuple[str, str]:
+        """(nome do arquivo, JSON) com tudo o que é do usuário."""
+        agora = self.agora().astimezone()
+        return arquivo_de_backup.nome_do_arquivo(agora.date()), exportacao.gerar_backup(self.repo.exportar(), agora)
+
+    def ler_backup(self, conteudo: str | bytes) -> Backup:
+        """UC09 2': valida e diz quantos dias serão importados. Nada é gravado aqui."""
+        return exportacao.ler_backup(conteudo)
+
+    def restaurar(self, backup: Backup, substituir: bool) -> ResultadoDaImportacao:
+        """UC09 3'-4'. Depois da importação (atômica), refaz o calendário automático dos
+        anos que estavam preparados e dos que o backup menciona."""
+        anos = self.repo.anos_com_calendario()
+        resultado = self.repo.importar(backup.dados, substituir)
+        self.preferencias = self.repo.preferencias()
+        anos |= {d.data.year for d in backup.dados.datas_ocultas}
+        anos |= {d.data.year for d in backup.dados.datas_manuais if not d.recorrente}
+        for ano in sorted(anos):
+            preparado = calendario.preparar_ano(self.repo, ano, self.preferencias)
+            if preparado.aviso:
+                self.avisos.append(preparado.aviso)
+        return resultado
 
 
 def ler_data(texto: str) -> date:

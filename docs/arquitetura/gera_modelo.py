@@ -288,7 +288,7 @@ el("AC_cal", "ApplicationComponent", "Calendário: feriados e emendas",
 el("AC_repo", "ApplicationComponent", "Repositório SQLite",
    "sqlite3 da stdlib, migrações por PRAGMA user_version, transações atômicas e trava para as threads do Flet. Único que fala SQL. Implementa a porta Calendario.", CT,
    modulo="folha_ponto/dados/", subdominio_DDD="Generic")
-el("AC_bkp", "ApplicationComponent", "Exportação e backup", "Folha em texto/CSV; backup e restauração em JSON.", CT,
+el("AC_bkp", "ApplicationComponent", "Exportação e backup", "Python puro: folha em texto/CSV (;) na ordem do papel; backup JSON versionado (formato + versão) validado antes de gravar. A restauração (substituir ou mesclar pelo updated_at) é uma transação única do Repositório.", CT,
    modulo="folha_ponto/exportacao/", subdominio_DDD="Supporting")
 el("AC_lib", "ApplicationComponent", "Biblioteca holidays (Calendário oficial do Brasil)",
    "Dependência open source, offline. Ator secundário do UC06.", CT, subdominio_DDD="Generic")
@@ -398,7 +398,7 @@ WPS = [("WP1", "WP1 Limpar o repositório", "Remover Django, React, Flutter, orq
        ("WP5", "WP5 Telas Flet", "Hoje (bater ponto), Mês, Folha, Ajustes.", ["GE5", "GE7", "GB1"]),
        ("WP6", "WP6 Exportação e backup", "Folha em texto/CSV, backup/restauração JSON.", ["GE8"]),
        ("WP7", "WP7 APK e CI", "flet build apk, teste de não-rede, workflow único.", ["GE5"])]
-FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05", "WP5": "concluído em 2026-11-05"}
+FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05", "WP4": "concluído em 2026-11-05", "WP5": "concluído em 2026-11-05", "WP6": "concluído em 2026-11-05"}
 for key, name, doc, gaps in WPS:
     el(key, "WorkPackage", name, doc, EF, status=FEITOS.get(key, "a fazer"))
     rels("Association", [(key, g) for g in gaps], EF)
