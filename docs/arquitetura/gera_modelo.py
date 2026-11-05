@@ -286,7 +286,7 @@ el("AC_cal", "ApplicationComponent", "Calendário: feriados e emendas",
    "Gera o ano pela lib holidays (BR/SP, public + optional), aplica a regra de emenda e mescla as datas manuais.", CT,
    modulo="folha_ponto/calendario/", subdominio_DDD="Supporting")
 el("AC_repo", "ApplicationComponent", "Repositório SQLite",
-   "sqlite3 da stdlib, migrações por PRAGMA user_version. Único que fala SQL.", CT,
+   "sqlite3 da stdlib, migrações por PRAGMA user_version, transações atômicas e trava para as threads do Flet. Único que fala SQL. Implementa a porta Calendario.", CT,
    modulo="folha_ponto/dados/", subdominio_DDD="Generic")
 el("AC_bkp", "ApplicationComponent", "Exportação e backup", "Folha em texto/CSV; backup e restauração em JSON.", CT,
    modulo="folha_ponto/exportacao/", subdominio_DDD="Supporting")
@@ -310,11 +310,11 @@ rels("Serving", [(key, proc) for key, *_, proc in SERV] +
       ("AC_dom", "AC_bkp"), ("AC_dom", "AC_ui"), ("AC_cal", "AC_ui")], CT)
 rels("Assignment", [("AI_tel", key) for key, *_ in SERV], CT)
 
-el("DO_reg", "DataObject", "Lançamento do dia (time_records)",
+el("DO_reg", "DataObject", "Lançamento do dia (tabela lancamentos)",
    "data (única), tipo, entrada, saida_almoco, volta_almoco, saida, entrada_extra, saida_extra, observacao, criado_em, atualizado_em.", CD)
-el("DO_cal", "DataObject", "Data do calendário (calendar_days)",
-   "date, nome, origem (nacional, estadual, facultativo, manual, emenda), confirmada, versão da lib.", CD)
-el("DO_pref", "DataObject", "Preferências (settings)", "UF, município, jornada padrão, facultativo conta como folga (padrão: sim), tema.", CD)
+el("DO_cal", "DataObject", "Data especial (tabela datas_especiais)",
+   "data, nome, natureza (feriado, facultativo, emenda, emenda_sugerida), origem (nacional, estadual, facultativo, regra_emenda, manual), recorrente, oculta, fonte (versão da lib).", CD)
+el("DO_pref", "DataObject", "Preferências (tabela preferencias)", "UF, município, jornada padrão, facultativo conta como folga (padrão: sim), tema.", CD)
 el("DO_ctr", "DataObject", "Vocabulário do domínio (vocabulario.py)", "Enums TipoDia, Status e Marcacao: fonte única dos termos. Sucede o contracts/time_record.json da v1.", CD)
 el("DO_bkp", "DataObject", "Arquivo de backup (JSON)", "Versionado; lançamentos, datas manuais, emendas confirmadas, preferências.", CD)
 el("DO_folha", "DataObject", "Folha do mês (texto/CSV)", "Mesma ordem de colunas do papel.", CD)
@@ -348,7 +348,7 @@ el("SS_sql", "SystemSoftware", "SQLite (sqlite3 da stdlib)", "Banco embutido, ar
 el("TS_sto", "TechnologyService", "Armazenamento privado do app", "Diretório de dados do app, apagado só na desinstalação.", DT)
 el("TS_sha", "TechnologyService", "Compartilhamento do Android", "Menu Compartilhar: salvar, WhatsApp, e-mail, Drive.", DT)
 el("ART_apk", "Artifact", "folha-de-ponto.apk", "Gerado por `uv run flet build apk`.", DT)
-el("ART_db", "Artifact", "folha_de_ponto.db", "Arquivo SQLite com time_records, calendar_days e settings.", DT)
+el("ART_db", "Artifact", "folha_de_ponto.db", "Arquivo SQLite com lancamentos, datas_especiais e preferencias. Pasta: FLET_APP_STORAGE_DATA.", DT)
 el("ART_bkp", "Artifact", "backup-AAAA-MM-DD.json", "Arquivo de backup que o usuário guarda fora do celular.", DT)
 el("ND_pc", "Node", "PC de desenvolvimento", "Onde se programa, testa e gera o APK.", DT)
 el("SS_uv", "SystemSoftware", "uv + Python 3.12", "uv sync, uv run, uv.lock.", DT)
@@ -398,7 +398,7 @@ WPS = [("WP1", "WP1 Limpar o repositório", "Remover Django, React, Flutter, orq
        ("WP5", "WP5 Telas Flet", "Hoje (bater ponto), Mês, Folha, Ajustes.", ["GE5", "GE7", "GB1"]),
        ("WP6", "WP6 Exportação e backup", "Folha em texto/CSV, backup/restauração JSON.", ["GE8"]),
        ("WP7", "WP7 APK e CI", "flet build apk, teste de não-rede, workflow único.", ["GE5"])]
-FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05"}
+FEITOS = {"WP1": "concluído em 2026-11-05", "WP2": "concluído em 2026-11-05", "WP3": "concluído em 2026-11-05"}
 for key, name, doc, gaps in WPS:
     el(key, "WorkPackage", name, doc, EF, status=FEITOS.get(key, "a fazer"))
     rels("Association", [(key, g) for g in gaps], EF)
