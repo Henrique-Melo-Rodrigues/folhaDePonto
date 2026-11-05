@@ -1,5 +1,5 @@
 {
-  "$comment": "Fonte unica do vocabulario de dominio da folha de ponto. Gere os alvos com: python3 contracts/generate.py",
+  "$comment": "Fonte unica do vocabulario de dominio da folha de ponto (linguagem ubiqua). Lido direto pelo pacote Python folha_ponto (ADR-002).",
   "day_types": [
     { "key": "trabalho",          "label": "Trabalho",          "short_label": "Trabalho", "worked": true  },
     { "key": "atividade_teorica", "label": "Atividade teórica", "short_label": "Teórica",  "worked": false },

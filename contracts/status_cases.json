@@ -1,5 +1,5 @@
 {
-  "$comment": "Vetores golden de calculate_status, compartilhados pelos testes do backend (Python) e do mobile (Dart). Os horarios ja chegam normalizados (vazio => null), como apos normalize_times.",
+  "$comment": "Vetores golden de calculate_status (RN03), usados pelos testes pytest do dominio. Os horarios ja chegam normalizados (vazio => null), como apos normalize_times.",
   "cases": [
     {
       "name": "trabalho com os quatro horarios",

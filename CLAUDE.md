@@ -1,74 +1,43 @@
-# Diretrizes para Claude Code (`CLAUDE.md`)
+# CLAUDE.md: Folha de Ponto Pessoal (v2)
 
-Este arquivo contém as instruções e convenções do projeto **Folha de Ponto Pessoal** para o **Claude Code (`claude`)**.
+App de folha de ponto pessoal, **100% offline no celular**, em **Python com uv**.
+O porquê está em `docs/decisions/ADR-002-app-python-offline-no-celular.md`.
 
----
+## Antes de mudar algo
+- Casos de uso e regras: `docs/casos-de-uso.md` (UC01–UC11, RN01–RN10, RNF01–RNF06).
+- Arquitetura: `docs/arquitetura/README.md` (ArchiMate/TOGAF ADM). Mudou a arquitetura?
+  Edite `docs/arquitetura/gera_modelo.py`, rode `uv run docs/arquitetura/gera_modelo.py`
+  e depois `docs/arquitetura/exporta_views.sh`. Nunca edite o `.archimate` à mão.
+- Roadmap: README (WP1–WP7). Trabalhe um pacote de trabalho por vez.
 
-## 1. Papel no Ecossistema Multi-CLI
+## Estrutura
 
-Quando acionado pelo orquestrador autônomo (`./orchestrator.sh`), seu papel é o de **Builder**:
-1. Leia a tarefa em `.agent_bus/current_task.md`.
-2. Verifique os bloqueios ou feedbacks em `.agent_bus/feedback.md`.
-3. Implemente o código necessário seguindo a arquitetura do projeto.
-4. Crie/atualize testes automatizados cobrindo suas alterações.
-5. Verifique se os testes locais passam antes de concluir.
-6. Ao finalizar a rodada, escreva um resumo objetivo em `.agent_bus/builder_output.md`.
-
----
-
-## 2. Estrutura do Projeto e Stacks
-
-- **Backend** (`src/backend`):
-  - Framework: Django 5 + Django REST Framework.
-  - Banco de dados: SQLite local (`db.sqlite3`).
-  - Gerenciador de dependências: `uv`.
-  - Arquitetura em camadas estrita:
-    - `views.py` (APIView, autenticação via `X-Api-Key`, delegação).
-    - `serializers.py` (Validação baseada em `domain_generated.py`).
-    - `services.py` (`TimeRecordService` - regras de cálculo e negócio).
-    - `repositories.py` (`TimeRecordRepository` - queries ORM SQLite).
-    - `models.py` (`TimeRecord`).
-
-- **Frontend Web** (`src/web`):
-  - Stack: React 19 + TypeScript + Vite.
-  - Gerenciador: `npm`.
-  - Componentes principais em `src/web/src/components/` (`TodayTab`, `MonthTab`, `RecordForm`, `RecordCard`, `ApiKeyGate`).
-
-- **Contratos Compartilhados** (`contracts/`):
-  - Fonte única da verdade: `contracts/time_record.json`.
-  - Gerador de código: `python3 contracts/generate.py`.
-  - Nunca edite `domain_generated.py`, `domain.generated.ts` ou `domain.g.dart` manualmente.
-
-- **Mobile** (`src/mobile`):
-  - Flutter app Android.
-
----
-
-## 3. Comandos Essenciais de Desenvolvimento
-
-```bash
-# Validação de contratos
-python3 contracts/generate.py --check
-python3 contracts/generate.py          # Se atualizar o JSON de contrato
-
-# Testes do Backend
-cd src/backend && uv run python manage.py test
-
-# Build e Typecheck do Frontend
-cd src/web && npm run build
-
-# Servidor de Desenvolvimento Backend
-cd src/backend && uv run python manage.py runserver 0.0.0.0:8000
-
-# Servidor de Desenvolvimento Frontend
-cd src/web && npm run dev
+```
+src/folha_ponto/
+  dominio/     regras do dia (Python puro; Core)
+  calendario/  feriados (lib holidays), facultativos, emendas, datas manuais
+  dados/       repositório SQLite (único módulo que fala SQL)
+  exportacao/  folha do mês (texto/CSV) e backup JSON
+  ui/          telas Flet (só chamam o domínio)
+contracts/     time_record.json (vocabulário) + status_cases.json (vetores golden)
+tests/         pytest
 ```
 
----
+## Comandos
 
-## 4. Regras Obrigatórias
+```bash
+uv sync
+uv run pytest
+```
 
-- **100% Offline / Local-First**: Não adicione chamadas HTTP para serviços externos ou CDNs.
-- **Autenticação**: Todos os endpoints de dados requerem cabeçalho `X-Api-Key`.
-- **Testes Obrigatórios**: Qualquer nova funcionalidade ou correção de bug deve vir acompanhada de testes unitários ou de integração.
-- **Respeito às Camadas**: Nunca faça queries de banco diretamente em `views.py` ou `serializers.py`; use o `TimeRecordRepository` através do `TimeRecordService`.
+## Regras
+- **Offline:** nada de rede no pacote (`tests/test_sem_rede.py` reprova).
+- **Camadas:** a UI não fala SQL; só `dados/` usa `sqlite3`; `dominio/` não importa Flet.
+- **Testes junto com a mudança:** regra nova ou bug corrigido vem com teste.
+- **Linguagem ubíqua:** use os termos do glossário (marcação, lançamento, tipo do dia,
+  pendência, folha, emenda) em código, testes e mensagens.
+- **Domínio:** emenda = folga; ponto facultativo = folga por padrão (preferência pode
+  desligar); jornada padrão 07:45–12:00 e 13:00–14:45; cidade Cubatão/SP.
+- **Dados pessoais:** PDFs são ignorados pelo git (`*.[pP][dD][fF]`). Nunca copie dados
+  da folha oficial (nome, CTPS, matrícula) para código, testes ou docs.
+- Commit e push só quando o usuário pedir.

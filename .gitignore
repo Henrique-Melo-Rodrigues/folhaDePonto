@@ -1,42 +1,32 @@
 # Segredos e ambiente
 .env
 .env.*
-!.env.example
-!.env.prod.example
 
-# Barramento de Agentes Multi-CLI
-.agent_bus/
+# Documentos pessoais (folha de ponto oficial: nome, CTPS, matrícula).
+# Qualquer PDF, em qualquer pasta e com qualquer caixa na extensão.
+*.[pP][dD][fF]
 
-# Python
+# Dados do app (banco local e backups gerados em testes manuais)
+*.db
+*.sqlite3
+backup-*.json
+
+# Python / uv
 __pycache__/
 *.py[cod]
-*.pyo
 .venv/
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Django
-db.sqlite3
-staticfiles/
-
-# Node / Frontend
-node_modules/
 dist/
 
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
+# Build do app (flet build)
 build/
-android/.gradle/
-android/local.properties
-android/app/debug/
-android/app/profile/
-android/app/release/
 *.apk
 *.aab
-*.ipa
+
+# Archi (cópias e backups do modelo; o oficial é docs/arquitetura/folha-de-ponto.archimate)
+*.archimate.bak
 
 # IDEs
 .idea/
