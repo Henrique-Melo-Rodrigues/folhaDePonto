@@ -19,6 +19,23 @@ def test_apk_nao_pede_internet():
     assert FLET["android"]["permission"]["android.permission.INTERNET"] is False
 
 
+def test_holidays_vai_extraida_no_apk():
+    """No APK as libs ficam num zip; a holidays lê os .mo via gettext por caminho real.
+
+    Sem extração o app quebra ao abrir (FileNotFoundError: No translation file found
+    for domain: 'BR').
+    """
+    assert "holidays" in FLET["android"]["extract_packages"]
+
+
+def test_holidays_le_traducoes_por_caminho_de_arquivo():
+    """Documenta o porquê do teste acima: se a lib passar a ler do zip, a extração sobra."""
+    import holidays
+
+    traducao = Path(holidays.__file__).with_name("locale") / "pt_BR" / "LC_MESSAGES" / "BR.mo"
+    assert traducao.is_file()
+
+
 def test_ponto_de_entrada_do_apk():
     app = RAIZ / FLET["app"]["path"]
     entrada = app / f"{FLET['app']['module']}.py"

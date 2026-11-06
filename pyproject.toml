@@ -38,6 +38,12 @@ copyright = "Henrique Rodrigues"
 path = "src"        # o APK leva src/main.py e o pacote folha_ponto
 module = "main"
 
+[tool.flet.android]
+# No Android as libs vão num zip (zipimport). A holidays lê as traduções (.mo) por
+# caminho real (gettext + __file__), então precisa ir extraída para o disco.
+# Sem isso o app quebra ao abrir: "No translation file found for domain: 'BR'".
+extract_packages = ["holidays"]
+
 [tool.flet.android.permission]
 # RNF01: 100% offline. O flet build inclui INTERNET por padrão; aqui ela sai.
 "android.permission.INTERNET" = false

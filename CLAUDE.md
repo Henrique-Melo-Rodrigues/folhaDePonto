@@ -42,4 +42,6 @@ uv run flet build apk   # APK (normalmente pelo CI: .github/workflows/ci.yml)
   desligar); jornada padrão 07:45–12:00 e 13:00–14:45; cidade Cubatão/SP.
 - **Dados pessoais:** PDFs são ignorados pelo git (`*.[pP][dD][fF]`). Nunca copie dados
   da folha oficial (nome, CTPS, matrícula) para código, testes ou docs.
-- Commit e push só quando o usuário pedir.
+- **Git:** o Claude faz commits detalhados (o quê, por quê e como foi verificado), mas
+  **nunca** roda `git push`, `git pull` ou `git fetch`. Isso é sempre com o usuário:
+  pergunte a ele.
