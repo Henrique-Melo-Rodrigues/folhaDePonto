@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded pelo [ADR-002](ADR-002-app-python-offline-no-celular.md) em 2026-11-05.
 
 ## Date
 

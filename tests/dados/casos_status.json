@@ -1,0 +1,114 @@
+{
+  "$comment": "Vetores golden de calcular_status (RN03), herdados da v1 (contracts/status_cases.json) e traduzidos para o vocabulario da v2. Marcacao ausente = vazia.",
+  "casos": [
+    {
+      "nome": "trabalho com os quatro horarios",
+      "tipo": "trabalho",
+      "marcacoes": {
+        "entrada": "07:45",
+        "saida_almoco": "12:00",
+        "volta_almoco": "13:00",
+        "saida": "14:45"
+      },
+      "esperado": "completo"
+    },
+    {
+      "nome": "trabalho com apenas a entrada",
+      "tipo": "trabalho",
+      "marcacoes": {
+        "entrada": "07:45"
+      },
+      "esperado": "incompleto"
+    },
+    {
+      "nome": "trabalho faltando a saida final",
+      "tipo": "trabalho",
+      "marcacoes": {
+        "entrada": "07:45",
+        "saida_almoco": "12:00",
+        "volta_almoco": "13:00"
+      },
+      "esperado": "incompleto"
+    },
+    {
+      "nome": "trabalho sem nenhum horario",
+      "tipo": "trabalho",
+      "marcacoes": {},
+      "esperado": "incompleto"
+    },
+    {
+      "nome": "atividade teorica sem horarios",
+      "tipo": "atividade_teorica",
+      "marcacoes": {},
+      "esperado": "nao_trabalhado"
+    },
+    {
+      "nome": "folga sem horarios",
+      "tipo": "folga",
+      "marcacoes": {},
+      "esperado": "nao_trabalhado"
+    },
+    {
+      "nome": "compensacao sem horarios",
+      "tipo": "compensacao",
+      "marcacoes": {},
+      "esperado": "nao_trabalhado"
+    },
+    {
+      "nome": "folga com os quatro horarios lancados",
+      "tipo": "folga",
+      "marcacoes": {
+        "entrada": "07:45",
+        "saida_almoco": "12:00",
+        "volta_almoco": "13:00",
+        "saida": "14:45"
+      },
+      "esperado": "completo"
+    },
+    {
+      "nome": "feriado com horario parcial",
+      "tipo": "feriado",
+      "marcacoes": {
+        "entrada": "08:00"
+      },
+      "esperado": "incompleto"
+    },
+    {
+      "nome": "outro sem horarios",
+      "tipo": "outro",
+      "marcacoes": {},
+      "esperado": "nao_trabalhado"
+    },
+    {
+      "nome": "trabalho completo com hora extra",
+      "tipo": "trabalho",
+      "marcacoes": {
+        "entrada": "07:45",
+        "saida_almoco": "12:00",
+        "volta_almoco": "13:00",
+        "saida": "14:45",
+        "entrada_extra": "15:00",
+        "saida_extra": "17:00"
+      },
+      "esperado": "completo"
+    },
+    {
+      "nome": "extra nao completa um dia sem a saida",
+      "tipo": "trabalho",
+      "marcacoes": {
+        "entrada": "07:45",
+        "saida_almoco": "12:00",
+        "volta_almoco": "13:00",
+        "entrada_extra": "15:00",
+        "saida_extra": "17:00"
+      },
+      "esperado": "incompleto"
+    },
+    {
+      "nome": "falta sem horarios",
+      "tipo": "falta",
+      "marcacoes": {},
+      "esperado": "nao_trabalhado"
+    }
+  ]
+}

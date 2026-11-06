@@ -1,6 +1,0 @@
-# Troque seu-dominio.com.br pelo seu dominio real.
-# O Caddy gera e renova o certificado HTTPS (Let's Encrypt) sozinho.
-seu-dominio.com.br {
-    encode gzip
-    reverse_proxy api:8000
-}

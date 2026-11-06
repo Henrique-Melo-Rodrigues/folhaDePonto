@@ -1,0 +1,42 @@
+@startuml casos-de-uso
+' Folha de Ponto Pessoal (v2, app offline) - ver casos-de-uso.md
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase { BackgroundColor #eef4ff
+  BorderColor #1e5cb3 }
+
+actor "Trabalhador" as T
+actor "Tempo" as Tempo
+actor "Calendário oficial\ndo Brasil\n(lib holidays)" as Cal <<sistema>>
+
+rectangle "Folha de Ponto (app no celular)" {
+  usecase "UC01 Bater ponto agora" as UC01
+  usecase "UC02 Lançar dia manualmente" as UC02
+  usecase "UC03 Classificar dia\ncomo feriado/emenda" as UC03
+  usecase "UC04 Excluir lançamento" as UC04
+  usecase "UC05 Consultar mês" as UC05
+  usecase "UC06 Preparar calendário do ano" as UC06
+  usecase "UC07 Conferir pendências do mês" as UC07
+  usecase "UC08 Ver folha do mês\npara cópia" as UC08
+  usecase "UC09 Fazer backup / restaurar" as UC09
+  usecase "UC10 Cadastrar feriado\nlocal ou emenda" as UC10
+  usecase "UC11 Configurar preferências" as UC11
+}
+
+T --> UC01
+T --> UC02
+T --> UC05
+T --> UC08
+T --> UC09
+T --> UC10
+T --> UC11
+Tempo --> UC06
+UC06 --> Cal
+
+UC03 .> UC02 : <<extend>>\n(tipo do dia)
+UC03 .> UC05 : <<extend>>\n(emenda candidata)
+UC04 .> UC02 : <<extend>>\n(dia já lançado)
+UC06 .> UC05 : <<extend>>\n(ano sem calendário)
+UC05 .> UC07 : <<include>>
+UC08 .> UC07 : <<include>>
+@enduml

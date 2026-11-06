@@ -8,127 +8,66 @@ No final do mês, juntar essas informações vira um trabalho à parte: rolar o 
 
 Foi desse problema real que surgiu a ideia deste projeto.
 
-## O que é
+## O que é (v2)
 
-Um web-app pessoal para registrar os horários de trabalho diariamente, classificar o tipo de cada dia e consultar o histórico do mês de forma organizada — substituindo as anotações soltas do WhatsApp por uma interface simples e acessível de qualquer navegador.
+Um **app para o celular, 100% offline**, que:
 
-O app permite registrar:
+- registra cada marcação **na hora, com um toque** (entrada, saída almoço, volta, saída e hora extra);
+- já sabe os **feriados** (nacionais e de SP), os **pontos facultativos** e sugere as **emendas**;
+- aponta as **pendências do mês** (dia útil sem lançamento, dia incompleto);
+- mostra o mês **na ordem da folha de papel** (dias 01–31; Manhã, Tarde, Extra), pronto para copiar à mão;
+- faz **backup** num arquivo que você guarda onde quiser.
 
-- Horário de entrada
-- Saída para o almoço
-- Retorno do almoço
-- Saída final
-- Tipo do dia (trabalho, atividade teórica, folga, compensação, feriado, falta)
-- Observações livres
+Sem servidor, sem internet, sem conta: os dados ficam num SQLite dentro do app.
 
 ## Por que esse projeto
 
-Além de resolver um problema real do dia a dia, este projeto é um ambiente deliberado de aprendizado e prática de boas práticas de desenvolvimento com o auxílio de IA.
-
-A ideia é construir algo funcional do zero — com arquitetura limpa, testes, segurança e ferramentas modernas — usando IA como par de programação ao longo de todo o processo. Não como atalho, mas como forma de aprender mais rápido e com mais qualidade.
+Além de resolver um problema real do dia a dia, este projeto é um ambiente deliberado de aprendizado: arquitetura documentada (TOGAF ADM + ArchiMate), casos de uso, DDD e testes, usando IA como par de programação. A v1 cresceu demais (três pilhas e um orquestrador de agentes); a v2 volta ao essencial. O porquê está no [ADR-002](docs/decisions/ADR-002-app-python-offline-no-celular.md).
 
 ## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend web | React + Vite + TypeScript (`src/web`) |
-| API | Django + Django REST Framework (`src/backend`) |
-| Banco de dados | SQLite via Django ORM |
-| Servidor | Django/WhiteNoise (serve API + frontend num só processo) |
-| App Android | Flutter + SQLite embarcado, offline (`src/mobile`) |
-| Contratos de domínio | JSON + gerador em Python (`contracts/`) |
-| Gerenciador de pacotes | uv (backend) / npm (frontend) / pub (mobile) |
+| Linguagem e pacotes | Python ≥ 3.12 com **uv** |
+| Banco | SQLite (`sqlite3` da biblioteca padrão) |
+| Feriados | lib [`holidays`](https://pypi.org/project/holidays/), offline |
+| Interface | [Flet](https://flet.dev), que gera o APK Android a partir do Python |
+| Testes | pytest |
 
-## Dois escopos, um domínio
+## Documentação
 
-O projeto entrega o mesmo registro de ponto por dois caminhos independentes:
-
-- **Web-app com servidor** (`src/backend` + `src/web`) — o caminho principal.
-  O Django guarda os dados e aplica as regras; o React é o cliente. Roda no PC
-  ou num celular antigo via Termux, e é acessível de qualquer navegador da rede.
-- **App Android offline** (`src/mobile`) — roda inteiro no aparelho, com SQLite
-  embarcado. Sem servidor, sem rede e sem chave de API. Existe um adapter HTTP
-  opcional para falar com o backend, mas ele só entra num build feito de
-  propósito para isso.
-
-Os dois não sincronizam entre si: cada um tem o seu banco. O que eles
-compartilham é o **domínio**.
-
-`contracts/time_record.json` é a fonte única do vocabulário — tipos de dia,
-campos de horário, status possíveis, formato da hora. O gerador escreve os três
-alvos, que são versionados e **nunca editados à mão**:
-
-```bash
-python3 contracts/generate.py           # regera os alvos
-python3 contracts/generate.py --check   # falha se algum estiver fora de sincronia
-```
-
-| Alvo gerado | Consumidor |
+| Documento | Conteúdo |
 |---|---|
-| `src/backend/apps/time_records/domain_generated.py` | Django |
-| `src/web/src/domain.generated.ts` | React |
-| `src/mobile/lib/domain/domain.g.dart` | Flutter |
+| [docs/casos-de-uso.md](docs/casos-de-uso.md) | casos de uso UC01–UC11, regras de negócio, requisitos não funcionais |
+| [docs/arquitetura/](docs/arquitetura/README.md) | modelo ArchiMate (Archi) com as views de cada fase do ADM e o roadmap |
+| [docs/decisions/](docs/decisions/) | ADRs |
 
-Backend e mobile implementam as regras de status em linguagens diferentes; os
-vetores golden de `contracts/status_cases.json` rodam nos testes dos dois lados
-e provam que continuam concordando.
-
-O raciocínio por trás do escopo offline está em
-[docs/decisions/ADR-001-mobile-local-first.md](docs/decisions/ADR-001-mobile-local-first.md).
-
-## Arquitetura do backend (camadas em classes)
-
-```
-views.py        → recebe HTTP, valida e delega (APIView)
-serializers.py  → valida e normaliza o input
-services.py     → regras de negócio (TimeRecordService)
-repositories.py → acesso ao SQLite via ORM (TimeRecordRepository)
-models.py       → modelo TimeRecord
-```
-
-## Como rodar localmente
-
-Backend (porta 8000):
+## Como rodar
 
 ```bash
-cd src/backend
-cp .env.example .env   # preencha SECRET_KEY e API_KEY
-uv sync
-uv run python manage.py migrate
-uv run python manage.py runserver 0.0.0.0:8000
+uv sync          # cria o .venv com as dependências travadas no uv.lock
+uv run pytest    # testes
+uv run folha-ponto   # abre o app no PC (janela Flet)
 ```
 
-Frontend em modo dev (porta 5173, com proxy para a API):
+### APK (Android)
+
+O APK é gerado pelo CI (`.github/workflows/ci.yml`) em push na `main`, em tag `v*`
+ou manualmente (*Run workflow*), e fica nos *artifacts* da execução. O CI reprova
+se o APK pedir a permissão `INTERNET` (o app é 100% offline).
+
+Para gerar no PC (a CLI do Flet instala Flutter e Android SDK na primeira vez):
 
 ```bash
-cd src/web
-npm install
-npm run dev
+uv run flet build apk     # saída em build/apk/
 ```
 
-Ou tudo numa porta só (como em produção): `npm run build` em `src/web` e
-acesse direto `http://localhost:8000` — o Django serve o build.
+## Andamento (roadmap)
 
-Na primeira visita o app pede a chave de API (`API_KEY` do `.env`).
-
-## Rodando num celular antigo (Termux + SSH)
-
-Veja o passo a passo completo em [DEPLOY.md](DEPLOY.md).
-
-## Endpoints da API
-
-```
-GET    /api/health/
-POST   /api/time-records/
-GET    /api/time-records/today/
-GET    /api/time-records/month/?year=YYYY&month=M
-GET    /api/time-records/<date>/
-PUT    /api/time-records/<date>/
-DELETE /api/time-records/<date>/
-```
-
-Todos os endpoints (exceto `/health`) exigem o header:
-
-```
-X-Api-Key: <sua chave do .env>
-```
+- [x] **WP1** Limpar o repositório + ADR-002
+- [x] **WP2** Domínio + contrato em Python
+- [x] **WP3** Repositório SQLite
+- [x] **WP4** Calendário (feriados, facultativos, emendas, Cubatão)
+- [x] **WP5** Telas Flet (Hoje, Mês, Folha, Ajustes)
+- [x] **WP6** Exportação e backup
+- [ ] **WP7** APK e CI: configuração e workflow prontos; falta o primeiro build do APK no GitHub Actions
